@@ -449,12 +449,11 @@ a { color: var(--forest); }
 .mx-side .hint { margin-top: 12px; }
 
 /* --- funil (fluxos origem → soja → destino) --- */
-.funil-wrap { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px; }
-.funil-wrap h3 { font-size: 0.98rem; }
-.funil-wrap .fsvg { width: 100%; max-width: 980px; height: auto; display: block; margin-top: 12px; font-family: var(--font); }
-.funil-wrap .fsvg rect { pointer-events: all; }
-.funil-wrap .fsvg path.fita { transition: opacity 0.15s; }
-.funil-wrap .fsvg path.fita:hover { opacity: 0.75; }
+.espelho-wrap { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px; }
+.espelho-wrap h3 { font-size: 0.98rem; }
+.espelho-wrap .esvg { width: 100%; height: auto; display: block; margin-top: 12px; font-family: var(--font); }
+.espelho-wrap .esvg rect { pointer-events: all; transition: filter 0.15s; }
+.espelho-wrap .esvg rect:hover { filter: brightness(1.12); }
 
 /* --- metodologia / footer --- */
 .met-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; margin-top: 26px; }
@@ -1477,83 +1476,60 @@ a { color: var(--forest); }
     renderAll();
   });
 
-  /* ---- funil origem → soja → destino (SVG sankey) ---- */
+  /* ---- espelho origem ↔ destino (substitui o sankey) ---- */
   function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
-  function funilSVG(o, dd, nome) {
+  function espelhoSVG(o, dd, nome) {
     var ui = +selUF.value;
     var rec;
-    if (ui < 0) { var r = agrega(o, dd); rec = { v: r.v, d: r.d, dv: r.dv, dd: r.dd }; }
+    if (ui < 0) { var r = agrega(o, dd); rec = { v: r.v, d: r.d, dv: r.dv || [], dd: r.dd || [] }; }
     else rec = ufPair(ui, o, dd);
-    var Vs = classesDe(rec.dv || []).filter(function (c) { return c.area > 0; });
-    var Ds = classesDe(rec.dd || []).filter(function (c) { return c.area > 0; });
-    if (!Vs.length || !Ds.length) {
-      return '<p class="hint" style="margin-top:10px">Funil disponível quando há área entrando <em>e</em> saindo de soja nesta janela — ajuste os anos de início e fim no console para ver outro trecho da série.</p>';
+    var Vs = classesDe(rec.dv).filter(function (c) { return c.area > 0; });
+    var Ds = classesDe(rec.dd).filter(function (c) { return c.area > 0; });
+    if (!Vs.length && !Ds.length) {
+      return '<p class="hint" style="margin-top:10px">Nenhum fluxo de/para soja nesta janela — ajuste os anos de início e fim no console.</p>';
     }
     function pack(lst) {
-      var t = lst.slice(0, 7);
-      var resto = lst.slice(7);
+      var t = lst.slice(0, 8);
+      var resto = lst.slice(8);
       if (resto.length) t.push({ id: null, area: resto.reduce(function (a, c) { return a + c.area; }, 0) });
       return t;
     }
     Vs = pack(Vs); Ds = pack(Ds);
-    var W = 980, GL = 176, BOXW = 200, CXL = 430, CW = 120, HL = 235;
-    var tV = Vs.reduce(function (a, c) { return a + c.area; }, 0);
-    var tD = Ds.reduce(function (a, c) { return a + c.area; }, 0);
-
-    function fitas(lst, total, YTOP, right) {
-      // fitas diagonais da coluna de classes até o nó central (desenhadas primeiro)
-      var frags = "", y = YTOP, cum = 0;
-      var xCaixa = right ? W - GL - BOXW : GL + BOXW;
-      var xCentro = right ? CXL + CW : CXL;
-      lst.forEach(function (c) {
-        var h = HL * c.area / total;
-        var cy = YTOP + (cum / total) * HL;
-        var rh = Math.max(1.2, HL * c.area / total);
+    var W = 980, XC = 490, ROW = 28;
+    function barra(lst, total, corTotal, titulo, right) {
+      var nRows = lst.length;
+      var H = 24 + nRows * ROW;
+      var frags = '<text x="' + (right ? XC + 6 : XC - 6) + '" y="13" text-anchor="'
+        + (right ? "start" : "end") + '" font-size="13.5" font-weight="800" fill="#18362d">'
+        + titulo + '</text>'
+        + '<text x="' + (right ? XC + 6 : XC - 6) + '" y="27" text-anchor="'
+        + (right ? "start" : "end") + '" font-size="12" font-weight="700" fill="' + corTotal + '">'
+        + resumo(total) + '</text>';
+      var max = lst[0].area || 1;
+      lst.forEach(function (c, idx) {
+        var y = 36 + idx * ROW;
+        var w = Math.max(3, 168 * c.area / max);
         var nm = c.id === null ? "Outras classes" : CLS[c.id];
         var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
-        frags += '<path class="fita" d="M' + xCaixa + ',' + y + ' L' + xCentro + ',' + cy
-          + ' L' + xCentro + ',' + (cy + rh) + ' L' + xCaixa + ',' + (y + h) + ' Z" fill="' + cor
-          + '" opacity="0.38"><title>' + nm + ' — ' + resumo(c.area) + ' (' + pct(c.area, total) + ')</title></path>';
-        y += h;
-        cum += c.area;
+        var bx = right ? XC : XC - w;
+        frags += '<rect x="' + bx + '" y="' + y + '" width="' + w + '" height="14" rx="2" fill="' + cor
+          + '" stroke="rgba(16,56,43,0.3)" stroke-width="0.8"><title>' + nm + ' — ' + resumo(c.area)
+          + ' (' + pct(c.area, total) + ')</title></rect>';
+        var lx = right ? 724 : 320;
+        frags += '<text x="' + lx + '" y="' + (y + 8) + '" text-anchor="' + (right ? "start" : "end")
+          + '" font-size="11.5" font-weight="700" fill="#18362d">' + trunc(nm, 30) + '</text>'
+          + '<text x="' + lx + '" y="' + (y + 20) + '" text-anchor="' + (right ? "start" : "end")
+          + '" font-size="10.5" font-weight="600" fill="#5f7169">' + resumo(c.area) + ' · ' + pct(c.area, total) + '</text>';
       });
-      return frags;
+      return { frags: frags, H: H };
     }
-    function caixas(lst, total, YTOP, right) {
-      // coluna de classes flush (sem buracos) + rótulos externos com valor e %
-      var frags = "", y = YTOP;
-      var bx = right ? W - GL - BOXW : GL;
-      var tx = right ? bx + BOXW + 14 : 6;
-      lst.forEach(function (c) {
-        var h = HL * c.area / total;
-        var nm = c.id === null ? "Outras classes" : CLS[c.id];
-        var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
-        frags += '<rect x="' + bx + '" y="' + y + '" width="' + BOXW + '" height="' + h + '" fill="' + cor + '"><title>' + nm + ' — ' + resumo(c.area) + ' (' + pct(c.area, total) + ')</title></rect>';
-        if (h >= 14) {
-          frags += '<text x="' + tx + '" y="' + (y + h / 2 - 2) + '" font-size="12.5" font-weight="700" fill="#18362d">' + trunc(nm, 21) + '</text>'
-            + '<text x="' + tx + '" y="' + (y + h / 2 + 12) + '" font-size="11.5" font-weight="600" fill="#5f7169">' + resumo(c.area) + ' · ' + pct(c.area, total) + '</text>';
-        }
-        y += h;
-      });
-      return frags;
-    }
-    var Y1T = 20, Y1 = 30, Y2T = Y1 + HL + 42, Y2 = Y2T + 10, H = Y2 + HL + 26;
-    var xm = CXL + CW / 2;
-    return '<svg class="fsvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Fluxos de uso da terra entre '
-      + o + ' e ' + dd + ' (sankey)">'
-      + '<text x="' + (W / 2) + '" y="' + Y1T + '" text-anchor="middle" font-size="14" font-weight="800" fill="#18362d">De onde veio a soja nova — ' + nome + ' · ' + o + ' → ' + dd + '</text>'
-      + fitas(Vs, tV, Y1, false)
-      + caixas(Vs, tV, Y1, false)
-      + '<rect x="' + CXL + '" y="' + Y1 + '" width="' + CW + '" height="' + HL + '" rx="5" style="fill:var(--forest)"><title>Soja nova total — ' + resumo(tV) + '</title></rect>'
-      + '<text x="' + xm + '" y="' + (Y1 + HL / 2 - 2) + '" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">VIRAM SOJA</text>'
-      + '<text x="' + xm + '" y="' + (Y1 + HL / 2 + 16) + '" text-anchor="middle" font-size="13.5" font-weight="800" fill="#dce89b">' + resumo(tV) + '</text>'
-      + '<text x="' + (W / 2) + '" y="' + Y2T + '" text-anchor="middle" font-size="14" font-weight="800" fill="#18362d">Para onde foi a soja que saiu — ' + o + ' → ' + dd + '</text>'
-      + fitas(Ds, tD, Y2, true)
-      + caixas(Ds, tD, Y2, true)
-      + '<rect x="' + CXL + '" y="' + Y2 + '" width="' + CW + '" height="' + HL + '" rx="5" style="fill:var(--atencao)"><title>Soja perdida total — ' + resumo(tD) + '</title></rect>'
-      + '<text x="' + xm + '" y="' + (Y2 + HL / 2 - 2) + '" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">SAIU DE SOJA</text>'
-      + '<text x="' + xm + '" y="' + (Y2 + HL / 2 + 16) + '" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff">' + resumo(tD) + '</text>'
-      + '</svg>';
+    var L = Vs.length ? barra(Vs, rec.v, "var(--forest)", "DE ONDE VEIO (em " + o + ")", false) : { frags: '<text x="268" y="13" text-anchor="end" font-size="13" font-weight="800" fill="#8f9d95">Nenhuma soja nova nesta janela</text>', H: 36 };
+    var R = Ds.length ? barra(Ds, rec.d, "var(--atencao)", "PARA ONDE FOI (em " + dd + ")", true) : { frags: '<text x="776" y="13" text-anchor="start" font-size="13" font-weight="800" fill="#8f9d95">Nenhuma saída de soja nesta janela</text>', H: 36 };
+    var H = Math.max(L.H, R.H) + 14;
+    var svg = '<svg class="esvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Espelho origem x destino (' + nome + ', ' + o + ' → ' + dd + ')">';
+    svg += '<line x1="490" y1="0" x2="490" y2="' + H + '" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 4"></line>';
+    svg += L.frags + R.frags + '</svg>';
+    return svg;
   }
 
   /* ---- ficha: um estado (expandido) ---- */
@@ -1597,9 +1573,9 @@ a { color: var(--forest); }
       + coluna("Destino da soja perdida", "Para qual uso a terra foi quando deixou de ser soja, em " + dd + ".", rec.dd, "Nenhuma área deixou de ser soja nesta seleção na janela analisada.")
       + '</div>'
       + '<p class="hint" style="margin-top:16px">' + nome + " · " + o + " → " + dd + (ui < 0 && r ? " · " + r.n + " UFs com soja" : "") + '</p>'
-      + '<div class="funil-wrap"><h3>Fluxos da janela</h3>'
-      + '<p class="hint" style="margin-top:2px">Largura proporcional à área de cada classe. Passe o mouse nas caixas e fitas para ver os valores.</p>'
-      + funilSVG(o, dd, nome)
+      + '<div class="espelho-wrap"><h3>De onde veio — para onde foi, nesta janela</h3>'
+      + '<p class="hint" style="margin-top:2px">Origens à esquerda da linha central, destinos à direita; cada classe mostra valor e participação. Passe o mouse em qualquer barra.</p>'
+      + espelhoSVG(o, dd, nome)
       + '</div>';
     marcaSelecao();
   }

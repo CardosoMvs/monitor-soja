@@ -126,7 +126,7 @@ step("escopo = Mato Grosso", function () {
   var esc = document.getElementById("escopo");
   esc.value = "10"; esc._fire("change", {});
   log("st-ufs-l:", REG["st-ufs-l"].textContent);
-  log("ficha tem sankey:", String(REG["state-panel"]._html.indexOf("VIRAM SOJA") >= 0));
+  log("ficha tem sankey:", String(REG["state-panel"]._html.indexOf("DE ONDE VEIO") >= 0));
   log("ranking destaca MT:", String(REG["rank-list"].innerHTML.indexOf("rank-row hl") >= 0));
   log("evo título:", REG["evo-titulo"].textContent.slice(0, 40));
   log("matriz escopo:", REG["matriz-escopo"].textContent.slice(0, 40));
