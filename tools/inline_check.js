@@ -28,7 +28,7 @@
     var c1 = hex2rgb(a), c2 = hex2rgb(b);
     return "rgb(" + Math.round(c1[0] + (c2[0] - c1[0]) * t) + "," + Math.round(c1[1] + (c2[1] - c1[1]) * t) + "," + Math.round(c1[2] + (c2[2] - c1[2]) * t) + ")";
   }
-  var RAMPA = { virou: ["#edf1e6", "#184b39"], deixou: ["#f2e9db", "#8a4a12"], perm: ["#edf1eb", "#414f47"] };
+  var RAMPA = { virou: ["#edf1e6", "#184b39"], deixou: ["#f2e9db", "#8a4a12"], perm: ["#edf1eb", "#414f47"], sojad: ["#e8efeb", "#0e6a56"] };
   var SALDO_POS = "#2e7d5b", SALDO_NEG = "#b06010", SALDO_MEIO = "#eff1ea", SALDO_NEG_CLARO = "#f2ece2";
 
   function ha(v) { return fmt.format(Math.round(v || 0)) + " ha"; }
@@ -233,12 +233,13 @@
     $("badge-valor").textContent = resumo(r.v);
     $("badge-rotulo").textContent = "viraram soja · " + o + " → " + dd;
     $("janela-txt").textContent = o + " → " + dd;
+    $("st-soja-dd").textContent = resumo(r.v + r.p);
     $("st-virou").textContent = resumo(r.v);
     $("st-deixou").textContent = resumo(r.d);
     $("st-perm").textContent = resumo(r.p);
     $("st-saldo").textContent = resumo(r.v - r.d);
     $("st-ufs").textContent = r.n + " de 27";
-    $("rank-desc").textContent = "Área que virou soja (verde), a que deixou de ser soja (âmbar) e a que permaneceu soja (cinza) entre " + o + " e " + dd + ", por unidade federativa, em hectares.";
+    $("rank-desc").textContent = "Área que virou soja (verde) e a que deixou de ser soja (âmbar) entre " + o + " e " + dd + ", por unidade federativa, em hectares — na mesma escala.";
     $("comp-v-hint").textContent = "Composição das áreas que viraram soja (" + resumo(r.v) + ") pelas classes de uso no ano de origem (" + o + ").";
     $("comp-d-hint").textContent = "Composição das áreas que deixaram de ser soja (" + resumo(r.d) + ") pelas classes de uso no ano de destino (" + dd + ").";
     return r;
@@ -254,19 +255,19 @@
     var comTransicao = lista.filter(function (e) { return e.v > 0 || e.d > 0; });
     var maxV = lista.reduce(function (a, e) { return Math.max(a, e.v); }, 0) || 1;
     var maxD = lista.reduce(function (a, e) { return Math.max(a, e.d); }, 0) || 1;
-    var maxP = lista.reduce(function (a, e) { return Math.max(a, e.p); }, 0) || 1;
-    if (!comTransicao.length && maxP === 0) {
+    if (!comTransicao.length) {
       $("rank-list").innerHTML = "";
       $("rank-empty").hidden = false;
-      $("rank-empty").textContent = "Nenhuma área da classe Soja registrada nesta janela — a classe não estava presente nos anos selecionados.";
-      return;
+      $("rank-empty").textContent = r.p > 0
+        ? "Nesta janela a soja só permaneceu — nenhuma área virou ou deixou de ser soja (veja o quadro de permanência abaixo)."
+        : "Nenhuma área da classe Soja registrada nesta janela — a classe não estava presente nos anos selecionados.";
+      $("rank-scale").textContent = "";
+    } else {
+      $("rank-empty").hidden = true;
+      $("rank-scale").textContent = "Uma escala só para virou (verde) e deixou (âmbar): a maior UF da janela vale " + resumo(Math.max(maxV, maxD)) + " — o valor de cada barra aparece ao lado dela.";
     }
-    $("rank-empty").hidden = true;
-    $("rank-scale").textContent = "Escalas (da menor à maior UF na janela): virou até " + resumo(maxV)
-      + " · deixou até " + resumo(maxD) + " · permaneceu até " + resumo(maxP) + " — cada barra mostra o valor ao lado.";
     var html = "", ordem = 0;
-    lista.forEach(function (e) {
-      if (e.v <= 0 && e.d <= 0 && e.p <= 0) return;
+    comTransicao.forEach(function (e) {
       ordem++;
       var linhas = "";
       linhas += e.v > 0
@@ -275,9 +276,6 @@
       linhas += e.d > 0
         ? '<div class="bar-track"><div class="bar deixou" style="width:' + Math.max(1.5, 100 * e.d / maxD).toFixed(1) + '%"></div><span class="bar-val num">−' + resumo(e.d) + '</span></div>'
         : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
-      linhas += e.p > 0
-        ? '<div class="bar-track"><div class="bar perm" style="width:' + Math.max(1.5, 100 * e.p / maxP).toFixed(1) + '%"></div><span class="bar-val num">' + resumo(e.p) + '</span></div>'
-        : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
       html += '<div class="rank-row"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
@@ -285,6 +283,20 @@
         + '<div class="bars">' + linhas + '</div></div>';
     });
     $("rank-list").innerHTML = html;
+
+    /* ranking da permanência — escala própria, ordenado por permaneceu */
+    var perms = lista.filter(function (e) { return e.p > 0; })
+      .sort(function (a, b) { return b.p - a.p; });
+    $("rank-perm-empty").hidden = perms.length > 0;
+    var pm = perms.length ? perms[0].p : 1;
+    $("rank-perm-list").innerHTML = perms.map(function (e, k) {
+      return '<div class="rank-row"><div class="rank-head">'
+        + '<span class="pos num">' + String(k + 1).padStart(2, "0") + '</span>'
+        + '<span class="uf">' + e.label + '</span>'
+        + '<span class="val num">' + resumo(e.p) + ' <small>· ' + pct(e.p, e.v + e.d + e.p) + ' da área da UF na janela</small></span></div>'
+        + '<div class="bars"><div class="bar-track"><div class="bar perm" style="width:' + Math.max(1.5, 100 * e.p / pm).toFixed(1) + '%"></div><span class="bar-val num">' + resumo(e.p) + '</span></div></div>'
+        + '</div>';
+    }).join("");
   }
 
   function renderEstrutura(r) {
@@ -348,6 +360,7 @@
       if (metrica === "virou") return r.v;
       if (metrica === "deixou") return r.d;
       if (metrica === "perm") return r.p;
+      if (metrica === "sojad") return r.v + r.p;
       return r.v - r.d;
     });
   }
@@ -362,7 +375,8 @@
     var maxPos = Math.max.apply(null, vals);
     $("mapa-desc").textContent = "Cada UF pintada pela " + ({
       virou: "área que virou soja", deixou: "área que deixou de ser soja",
-      saldo: "área líquida (virou − deixou)", perm: "área que permaneceu soja"
+      saldo: "área líquida (virou − deixou)", perm: "área que permaneceu soja",
+      sojad: "área total de soja no ano final"
     })[metrica] + " entre " + o + " e " + dd + ".";
     if (max <= 0) {
       SVG.querySelectorAll("path").forEach(function (p) { p.setAttribute("fill", "#edf1eb"); });
@@ -426,9 +440,9 @@
       var o = +selO.value, dd = +selD.value;
       var r = ufPair(i, o, dd);
       tip.innerHTML = '<div class="t-nome">' + UFS[i][1] + '</div>'
-        + '<div class="t-metrica num">' + resumo(r.v - r.d) + ' de saldo</div>'
+        + '<div class="t-metrica num">soja em ' + dd + ': ' + resumo(r.v + r.p) + '</div>'
         + '<div class="num">' + resumo(r.v) + ' virou · ' + resumo(r.d).replace("−", "") + ' deixou</div>'
-        + '<div class="num">' + resumo(r.p) + ' permaneceu</div>';
+        + '<div class="num">' + resumo(r.p) + ' permaneceu · saldo ' + resumo(r.v - r.d) + '</div>';
       var rect = $("map-plot").getBoundingClientRect();
       var x = Math.min(Math.max(e.clientX - rect.left, 90), rect.width - 90);
       tip.style.left = x + "px";
@@ -470,6 +484,7 @@
       if (metrica === "virou") return m.v;
       if (metrica === "deixou") return m.d;
       if (metrica === "perm") return m.p;
+      if (metrica === "sojad") return m.v + m.p;
       return m.v - m.d;
     }
     var max = 0, minS = 0, maxPos = 0;
@@ -618,6 +633,7 @@
       return;
     }
     var totHtml = '<div class="state-tot">'
+      + '<div class="kv"><div class="k">Soja em ' + dd + '</div><div class="n num">' + ha(rec.v + rec.p) + '</div></div>'
       + '<div class="kv"><div class="k">Virou soja</div><div class="n num">' + ha(rec.v) + '</div></div>'
       + '<div class="kv"><div class="k">Deixou de ser soja</div><div class="n num">' + ha(rec.d) + '</div></div>'
       + '<div class="kv"><div class="k">Permaneceu soja</div><div class="n num">' + ha(rec.p) + '</div></div>'
@@ -674,6 +690,7 @@
           + '</div>'
         : '<div class="cmp-bar"><span class="seg" style="flex:1"></span></div>';
       var vals = '<div class="cmp-vals num">'
+        + '<span class="key"><span class="sw" style="background:var(--forest)"></span> Soja em ' + dd + ': ' + resumo(rec.v + rec.p) + '</span>'
         + '<span class="key"><span class="sw" style="background:var(--forest)"></span> Virou: ' + resumo(rec.v) + '</span>'
         + '<span class="key"><span class="sw" style="background:var(--atencao)"></span> Deixou: ' + resumo(rec.d).replace("−", "") + '</span>'
         + '<span class="key"><span class="sw" style="background:var(--perm)"></span> Permaneceu: ' + resumo(rec.p) + '</span>'
