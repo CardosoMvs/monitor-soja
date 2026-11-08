@@ -126,7 +126,7 @@ step("escopo = Mato Grosso", function () {
   var esc = document.getElementById("escopo");
   esc.value = "10"; esc._fire("change", {});
   log("st-ufs-l:", REG["st-ufs-l"].textContent);
-  log("ficha tem sankey:", String(REG["state-panel"]._html.indexOf("DE ONDE VEIO") >= 0));
+  log("ficha tem sankey:", String(REG["state-panel"]._html.indexOf("De onde veio a soja nova") >= 0));
   log("ranking destaca MT:", String(REG["rank-list"].innerHTML.indexOf("rank-row hl") >= 0));
   log("evo título:", REG["evo-titulo"].textContent.slice(0, 40));
   log("matriz escopo:", REG["matriz-escopo"].textContent.slice(0, 40));
@@ -135,6 +135,19 @@ step("escopo de volta ao Brasil", function () {
   var esc = document.getElementById("escopo");
   esc.value = "-1"; esc._fire("change", {});
   log("st-ufs-l:", REG["st-ufs-l"].textContent, "| st-ufs:", REG["st-ufs"].textContent);
+});
+
+step("visibilidade: escopo estado esconde ranking/mapa", function () {
+  var esc = document.getElementById("escopo");
+  esc.value = "10"; esc._fire("change", {});
+  log("ranking display:", REG["ranking"].style.display, "| mapa display:", REG["mapa"].style.display,
+      "| nl-ranking hidden:", String(REG["nl-ranking"].hidden));
+  log("ficha sankey:", String(REG["state-panel"]._html.indexOf("De onde veio a soja nova") >= 0));
+});
+step("visibilidade: escopo Brasil mostra tudo", function () {
+  var esc = document.getElementById("escopo");
+  esc.value = "-1"; esc._fire("change", {});
+  log("ranking display:", REG["ranking"].style.display, "| mapa display:", REG["mapa"].style.display);
 });
 LOG.push("__OK__");
 LOG.join("\n");
