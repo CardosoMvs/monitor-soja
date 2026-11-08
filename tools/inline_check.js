@@ -263,7 +263,7 @@
       return;
     }
     $("rank-empty").hidden = true;
-    $("rank-scale").textContent = "Uma barra empilhada por UF, numa única escala (maior UF da janela: " + resumo(maxT) + "): o que virou (verde), o que deixou de ser (âmbar) e o que permaneceu (cinza) têm entre si e entre estados a proporção real. Valores dentro da barra quando cabem; saldo no lado direito.";
+    $("rank-scale").textContent = "Uma barra empilhada por UF, numa única escala (maior UF da janela: " + resumo(maxT) + "): o que virou (verde), o que deixou de ser (âmbar) e o que permaneceu (cinza) têm entre si e entre estados a proporção real. Valores dentro da barra quando cabem; no direito, “mant.” = soja no ano final (virou + permaneceu) e o saldo líquido.";
     var html = "", ordem = 0;
     comArea.forEach(function (e) {
       ordem++;
@@ -277,7 +277,7 @@
       html += '<div class="rank-row"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
-        + '<span class="val num">saldo ' + resumo(e.v - e.d) + '</span></div>'
+        + '<span class="val num">' + resumo(e.v + e.p) + ' mant. · saldo ' + resumo(e.v - e.d) + '</span></div>'
         + '<div class="bar-track"><div class="bar-stack" style="width:' + largura.toFixed(1) + '%">'
         + seg("seg-se", e.v) + seg("seg-sd", e.d) + seg("seg-sp", e.p)
         + '</div></div></div>';

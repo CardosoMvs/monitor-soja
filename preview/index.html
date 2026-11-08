@@ -246,9 +246,7 @@ a { color: var(--forest); }
 .comp-item2 + .comp-item2 { margin-top: 22px; }
 .stack { display: flex; height: 26px; border-radius: 4px; overflow: hidden; background: var(--surface-soft); }
 .stack .seg { min-width: 0; box-shadow: inset 0 0 0 1px rgba(16, 56, 43, 0.16); }
-.stack .seg-se { background: var(--forest); }
-.stack .seg-sd { background: var(--atencao); }
-.stack .seg-sp { background: var(--perm); }
+
 .comp-legend { display: grid; gap: 6px; margin-top: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
 .comp-item { display: flex; align-items: center; gap: 9px; font-size: 0.84rem; }
 .comp-item .sw { width: 11px; height: 11px; border-radius: 3px; flex: none; }
@@ -386,9 +384,9 @@ a { color: var(--forest); }
 .cmp-head .saldo { margin-left: auto; font-weight: 800; font-size: 0.88rem; white-space: nowrap; }
 .cmp-bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--surface-soft); margin-top: 10px; }
 .cmp-bar .seg { min-width: 0; box-shadow: inset 0 0 0 1px rgba(16, 56, 43, 0.16); }
-.cmp-bar .seg-se { background: var(--forest); }
-.cmp-bar .seg-sd { background: var(--atencao); }
-.cmp-bar .seg-sp { background: var(--perm); }
+.seg-se { background: var(--forest); }
+.seg-sd { background: var(--atencao); }
+.seg-sp { background: var(--perm); }
 .cmp-vals { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 9px; font-size: 0.78rem; color: var(--muted); font-weight: 600; }
 .cmp-vals .key { display: inline-flex; align-items: center; gap: 6px; }
 .cmp-vals .sw { width: 9px; height: 9px; border-radius: 2px; }
@@ -987,7 +985,7 @@ a { color: var(--forest); }
       return;
     }
     $("rank-empty").hidden = true;
-    $("rank-scale").textContent = "Uma barra empilhada por UF, numa única escala (maior UF da janela: " + resumo(maxT) + "): o que virou (verde), o que deixou de ser (âmbar) e o que permaneceu (cinza) têm entre si e entre estados a proporção real. Valores dentro da barra quando cabem; saldo no lado direito.";
+    $("rank-scale").textContent = "Uma barra empilhada por UF, numa única escala (maior UF da janela: " + resumo(maxT) + "): o que virou (verde), o que deixou de ser (âmbar) e o que permaneceu (cinza) têm entre si e entre estados a proporção real. Valores dentro da barra quando cabem; no direito, “mant.” = soja no ano final (virou + permaneceu) e o saldo líquido.";
     var html = "", ordem = 0;
     comArea.forEach(function (e) {
       ordem++;
@@ -1001,7 +999,7 @@ a { color: var(--forest); }
       html += '<div class="rank-row"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
-        + '<span class="val num">saldo ' + resumo(e.v - e.d) + '</span></div>'
+        + '<span class="val num">' + resumo(e.v + e.p) + ' mant. · saldo ' + resumo(e.v - e.d) + '</span></div>'
         + '<div class="bar-track"><div class="bar-stack" style="width:' + largura.toFixed(1) + '%">'
         + seg("seg-se", e.v) + seg("seg-sd", e.d) + seg("seg-sp", e.p)
         + '</div></div></div>';
