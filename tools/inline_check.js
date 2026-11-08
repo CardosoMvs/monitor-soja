@@ -447,6 +447,142 @@
   }
   $("mapa-metrica").addEventListener("change", renderMapa);
 
+  /* ---- um mapa por grupo de origem da soja nova ---- */
+  function idsSet(arr) {
+    var s = {};
+    arr.forEach(function (x) { s[x] = 1; });
+    return s;
+  }
+  /* paleta dos 6 grupos definida pelo projeto: cor base = ponto máximo da rampa */
+  var BASE6 = [
+    { tit: "Soja em {o} e {d}", cor: "#E64291", ids: null },
+    { tit: "Outras culturas → soja", cor: "#5BA9D6", ids: [9, 18, 19, 20, 35, 36, 40, 41, 46, 47, 48, 62] },
+    { tit: "Pastagem → soja", cor: "#F39A00", ids: [15] },
+    { tit: "Mosaico de usos → soja", cor: "#F2C500", ids: [21, 26] },
+    { tit: "Vegetação nativa → soja", cor: "#59A83B", ids: [1, 3, 4, 5, 6, 7, 10, 11, 12, 13, 29, 32, 49, 50, 77, 84] },
+    { tit: "Demais classes → soja", cor: "#8BAF78", ids: [23, 24, 25, 30, 31, 33, 75, 91] }
+  ];
+  var GRUPOS = BASE6.map(function (g) {
+    return { tit: g.tit, cor: g.cor, ids: g.ids ? idsSet(g.ids) : null,
+             rampa: [mix("#fafbf9", g.cor, 0.16), g.cor] };
+  });
+  var GSvg = {};
+  function buildGroupSvgs() {
+    if (!DADOS.mapa || $ ("grupos-grid").children.length) return;
+    var html = "";
+    GRUPOS.forEach(function (g, k) {
+      html += '<div class="mini-map"><h4 id="gtitle-' + k + '"></h4>'
+        + '<div class="mm-plot"><div class="bmap" id="gmap-' + k + '"></div>'
+        + '<div class="map-tip num" id="gtip-' + k + '"></div></div>'
+        + '<div class="scale"><span id="gscalemin-' + k + '">0</span><span class="grad" id="gscale-' + k + '"></span>'
+        + '<span id="gscalemax-' + k + '">—</span></div>'
+        + '<p class="hint num" id="gtot-' + k + '">—</p></div>';
+    });
+    $("grupos-grid").innerHTML = html;
+    GRUPOS.forEach(function (g, k) {
+      var svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", DADOS.mapa.viewBox);
+      DADOS.mapa.locs.forEach(function (l) {
+        var p = document.createElementNS(svgNS, "path");
+        p.setAttribute("d", l[1]);
+        p.setAttribute("id", "gm" + k + "-" + l[0]);
+        svg.appendChild(p);
+      });
+      GSvg[k] = svg;
+      $("gmap-" + k).appendChild(svg);
+      svg.addEventListener("mousemove", function (e) {
+        var path = e.target.closest ? e.target.closest("path") : null;
+        var tip = $("gtip-" + k);
+        if (!path) { tip.style.opacity = 0; return; }
+        var i = SIGLA2IDX[path.id.slice(5)];
+        if (i == null) { tip.style.opacity = 0; return; }
+        var o = +selO.value, dd = +selD.value;
+        var r = ufPair(i, o, dd);
+        var v = k === 0 ? r.p : somaGrupo(recGrupos(k, r));
+        var rt = r.v + r.p;
+        tip.innerHTML = '<div class="t-nome">' + UFS[i][1] + '</div>'
+          + '<div class="t-metrica num">' + gTitle(k) + ': ' + resumo(v) + '</div>'
+          + (rt > 0 ? '<div class="num">' + pct(v, rt) + ' da soja da UF nesta janela</div>' : "");
+        var plot = $("gmap-" + k).getBoundingClientRect();
+        var x = Math.min(Math.max(e.clientX - plot.left, 80), plot.width - 80);
+        tip.style.left = x + "px";
+        tip.style.top = (e.clientY - plot.top) + "px";
+        tip.style.opacity = 1;
+      });
+      svg.addEventListener("mouseleave", function () { $("gtip-" + k).style.opacity = 0; });
+      svg.addEventListener("click", function (e) {
+        var path = e.target.closest ? e.target.closest("path") : null;
+        if (!path) return;
+        var i = SIGLA2IDX[path.id.slice(5)];
+        if (i == null) return;
+        selUF.value = String(i);
+        setModo("um");
+      });
+    });
+  }
+  function gTitle(k) {
+    var g = GRUPOS[k];
+    return g.ids === null ? "Soja em " + selO.value + " e " + selD.value : g.tit;
+  }
+  function recGrupos(k, r) { return (r.dv || []); }
+  function somaGrupo(arr) { return arr.reduce(function (a, c) { return a + c[1]; }, 0); }
+
+  function renderGrupos() {
+    var o = +selO.value, dd = +selD.value;
+    buildGroupSvgs();
+    if (!DADOS.mapa) return;
+    var tot = [], max = [], nativaVals = [];
+    GRUPOS.forEach(function (g, k) {
+      $("gtitle-" + k).textContent = k === 0
+        ? "Soja em " + o + " e " + dd
+        : g.tit + " · " + o + " → " + dd;
+    });
+    GRUPOS.forEach(function (g, k) {
+      var vals = UFS.map(function (u, i) {
+        var r = ufPair(i, o, dd);
+        if (k === 0) return r.p;
+        var s = 0;
+        (r.dv || []).forEach(function (c) { if (g.ids[c[0]]) s += c[1]; });
+        return s;
+      });
+      var mx = vals.reduce(function (a, v) { return Math.max(a, v); }, 0);
+      tot[k] = vals.reduce(function (a, v) { return a + v; }, 0);
+      max[k] = mx;
+      if (k === 4) nativaVals = vals;
+      GSvg[k].querySelectorAll("path").forEach(function (p) {
+        var v = vals[SIGLA2IDX[p.id.slice(5)]];
+        p.setAttribute("fill", mx > 0 && v > 0
+          ? mix(g.rampa[0], g.rampa[1], Math.pow(v / mx, 0.45))
+          : "#f2f4ef");
+      });
+      var grad = "linear-gradient(90deg," + g.rampa[0] + "," + g.rampa[1] + ")";
+      $("gscale-" + k).style.background = grad;
+      $("gscalemax-" + k).textContent = resumo(mx);
+      var topUF = "";
+      var bi = 0;
+      vals.forEach(function (v, i) { if (v > vals[bi]) bi = i; });
+      if (mx > 0) topUF = " · maior: " + UFS[bi][1] + " (" + pct(vals[bi], tot[k]) + ")";
+      $("gtot-" + k).textContent = "Brasil: " + resumo(tot[k]) + topUF;
+    });
+    /* resumo dos seis grupos */
+    var base6 = tot[0] + tot[1] + tot[2] + tot[3] + tot[4] + tot[5];
+    $("g-leg-hint").textContent = "Área de cada grupo sobre o total envolvido (" + resumo(base6) + ") na janela " + o + " → " + dd + ".";
+    $("g-leg").innerHTML = GRUPOS.map(function (g, k) {
+      return '<li><span class="sw" style="background:' + g.rampa[1] + '"></span>'
+        + '<span class="nm">' + gTitle(k) + '</span>'
+        + '<span class="pv num">' + resumo(tot[k]) + ' · ' + pct(tot[k], base6) + '</span></li>';
+    }).join("");
+    /* top nativa */
+    var nt = nativaVals.map(function (v, i) { return { i: i, v: v }; })
+      .sort(function (a, b) { return b.v - a.v; }).filter(function (x) { return x.v > 0; }).slice(0, 6);
+    $("grupos-top-nativa").innerHTML = nt.length
+      ? nt.map(function (x, k) {
+        return '<li><span class="pos num">' + (k + 1) + '.</span><span class="uf">' + UFS[x.i][1]
+          + '</span><span class="v num">' + resumo(x.v) + '</span></li>';
+      }).join("")
+      : '<li><span class="uf" style="color:var(--muted)">Nenhuma área desta origem na janela.</span></li>';
+  }
+
   /* ---- matriz origem × destino ---- */
   function escopoMatriz() {
     if (MODO === "comparar") return -1;                 // Brasil
@@ -822,6 +958,7 @@
     renderComp(r.v, r.dv, "comp-bar", "comp-legend");
     renderComp(r.d, r.dd, "comp-bar-d", "comp-legend-d");
     renderMapa();
+    renderGrupos();
     renderMatriz();
     renderFicha();
     renderEvo();

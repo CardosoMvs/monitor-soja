@@ -294,6 +294,34 @@ a { color: var(--forest); }
 .map-top .pos { color: var(--vazio); font-weight: 800; }
 .map-top .uf { font-weight: 700; color: var(--ink); }
 .map-top .v { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.map-wrap--g { margin-top: 40px; }
+.sub-map { margin-top: 40px; }
+.g-leg { list-style: none; margin: 12px 0 0; padding: 0; font-size: 0.84rem; }
+.g-leg li { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.g-leg li:last-child { border-bottom: none; }
+.g-leg .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.g-leg .nm { color: var(--ink); font-weight: 600; min-width: 0; }
+.g-leg .pv { margin-left: auto; color: var(--muted); white-space: nowrap; text-align: right; }
+
+/* --- mini-mapas dos grupos --- */
+.grupos-grid { display: grid; gap: 14px; margin-top: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.mini-map { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px 16px 10px; }
+.mini-map h4 { font-size: 0.92rem; line-height: 1.3; }
+.mini-map .mm-plot { position: relative; margin-top: 8px; }
+.mini-map .bmap svg { width: 100%; height: auto; display: block; }
+.mini-map .bmap path { stroke: var(--surface); stroke-width: 0.6; cursor: pointer; transition: fill 0.15s; }
+.mini-map .bmap path:hover { stroke: var(--ink); stroke-width: 1.1; }
+.mini-map .scale { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.7rem; font-weight: 700; color: var(--muted); }
+.mini-map .scale .grad { flex: 1; height: 8px; border-radius: 999px; }
+.mini-map .map-tip {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: var(--forest-dark); color: #fff; padding: 9px 12px; border-radius: 6px;
+  font-size: 0.74rem; line-height: 1.5; box-shadow: var(--shadow-md);
+  opacity: 0; transform: translate(-50%, calc(-100% - 10px)); transition: opacity 0.15s;
+  max-width: 230px; white-space: nowrap;
+}
+.mini-map .map-tip .t-nome { font-weight: 800; font-size: 0.8rem; }
+#grupos-empty { margin-top: 14px; color: var(--muted); font-size: 0.9rem; }
 
 /* --- evolução --- */
 .evo-card { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px 18px; }
@@ -605,6 +633,22 @@ a { color: var(--forest); }
         <ul class="map-top num" id="mapa-top"></ul>
       </div>
     </div>
+
+    <h3 class="sub-map">De onde a soja veio — um mapa para cada grupo de origem</h3>
+    <p class="section-desc" id="grupos-desc">Seis mapas, um para cada fonte da soja nova nesta janela (padrão: 2018 → 2024, seguindo o console). Cada UF pintada pela área do grupo no estado — rampa própria por mapa; passe o mouse para os valores; clique para abrir o estado.</p>
+    <div class="grupos-grid" id="grupos-grid"></div>
+    <div class="comp-wrap" style="margin-top:18px">
+      <div class="comp-item2">
+        <h3>Os seis grupos no Brasil, nesta janela</h3>
+        <p class="hint" id="g-leg-hint">Área total de cada grupo de origem sobre o total da soja nova + soja que permaneceu.</p>
+        <ul class="g-leg" id="g-leg"></ul>
+      </div>
+      <div class="comp-item2">
+        <h3>Maiores áreas vindas de Vegetação nativa</h3>
+        <p class="hint">Top 6 UFs por área de origem nativa convertida em soja nesta janela.</p>
+        <ul class="map-top num" id="grupos-top-nativa"></ul>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -704,6 +748,7 @@ a { color: var(--forest); }
         <li>A base completa em formato <em>long</em> acompanha o repositório (<em>transicoes_long.csv.gz</em>, UF × origem × destino × transição × classe) para uso em R, Python ou planilhas.</li>
         <li>O mapa usa contornos simplificados das UFs (fonte aberta, precisão ilustrativa — não é cartografia oficial) e cores interpoladas, também indicativas.</li>
         <li>Seis UFs não registraram soja em nenhum ano da série (<span id="cob-zero2">—</span>).</li>
+        <li><strong>Os seis mapas de origem</strong> agregam as classes da Coleção 11 nos grupos: <em>Outras culturas</em> (Silvicultura 9, Cana 20, Dendê 35, Arroz 40, Outras Temporárias 41, Café 46, Citrus 47, Perenes 48, Algodão 62), <em>Pastagem</em> (15), <em>Mosaico de usos</em> (21, 26) e <em>Vegetação nativa</em> (Floresta e formações 1–7, 49; Herbácea/pantanal 10–13, 29, 32, 77, 84); tudo o que resta (Praia 23, Urbano 24, Não vegetada 25, Mineração 30, Água 31, Sol 75, Eólico 91) entra em <em>Demais classes</em>.</li>
         <li>As cores das classes seguem a <strong>legenda oficial da Coleção 11 do MapBiomas</strong> (tabela de códigos publicada em 13/08/2026). “Outras classes” (cinza claro) e as escalas divergentes de saldo são cores auxiliares deste site; “Permaneceu soja” usa um cinza comum em todos os gráficos.</li>
       </ul>
     </div>
@@ -1169,6 +1214,142 @@ a { color: var(--forest); }
   }
   $("mapa-metrica").addEventListener("change", renderMapa);
 
+  /* ---- um mapa por grupo de origem da soja nova ---- */
+  function idsSet(arr) {
+    var s = {};
+    arr.forEach(function (x) { s[x] = 1; });
+    return s;
+  }
+  /* paleta dos 6 grupos definida pelo projeto: cor base = ponto máximo da rampa */
+  var BASE6 = [
+    { tit: "Soja em {o} e {d}", cor: "#E64291", ids: null },
+    { tit: "Outras culturas → soja", cor: "#5BA9D6", ids: [9, 18, 19, 20, 35, 36, 40, 41, 46, 47, 48, 62] },
+    { tit: "Pastagem → soja", cor: "#F39A00", ids: [15] },
+    { tit: "Mosaico de usos → soja", cor: "#F2C500", ids: [21, 26] },
+    { tit: "Vegetação nativa → soja", cor: "#59A83B", ids: [1, 3, 4, 5, 6, 7, 10, 11, 12, 13, 29, 32, 49, 50, 77, 84] },
+    { tit: "Demais classes → soja", cor: "#8BAF78", ids: [23, 24, 25, 30, 31, 33, 75, 91] }
+  ];
+  var GRUPOS = BASE6.map(function (g) {
+    return { tit: g.tit, cor: g.cor, ids: g.ids ? idsSet(g.ids) : null,
+             rampa: [mix("#fafbf9", g.cor, 0.16), g.cor] };
+  });
+  var GSvg = {};
+  function buildGroupSvgs() {
+    if (!DADOS.mapa || $ ("grupos-grid").children.length) return;
+    var html = "";
+    GRUPOS.forEach(function (g, k) {
+      html += '<div class="mini-map"><h4 id="gtitle-' + k + '"></h4>'
+        + '<div class="mm-plot"><div class="bmap" id="gmap-' + k + '"></div>'
+        + '<div class="map-tip num" id="gtip-' + k + '"></div></div>'
+        + '<div class="scale"><span id="gscalemin-' + k + '">0</span><span class="grad" id="gscale-' + k + '"></span>'
+        + '<span id="gscalemax-' + k + '">—</span></div>'
+        + '<p class="hint num" id="gtot-' + k + '">—</p></div>';
+    });
+    $("grupos-grid").innerHTML = html;
+    GRUPOS.forEach(function (g, k) {
+      var svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", DADOS.mapa.viewBox);
+      DADOS.mapa.locs.forEach(function (l) {
+        var p = document.createElementNS(svgNS, "path");
+        p.setAttribute("d", l[1]);
+        p.setAttribute("id", "gm" + k + "-" + l[0]);
+        svg.appendChild(p);
+      });
+      GSvg[k] = svg;
+      $("gmap-" + k).appendChild(svg);
+      svg.addEventListener("mousemove", function (e) {
+        var path = e.target.closest ? e.target.closest("path") : null;
+        var tip = $("gtip-" + k);
+        if (!path) { tip.style.opacity = 0; return; }
+        var i = SIGLA2IDX[path.id.slice(5)];
+        if (i == null) { tip.style.opacity = 0; return; }
+        var o = +selO.value, dd = +selD.value;
+        var r = ufPair(i, o, dd);
+        var v = k === 0 ? r.p : somaGrupo(recGrupos(k, r));
+        var rt = r.v + r.p;
+        tip.innerHTML = '<div class="t-nome">' + UFS[i][1] + '</div>'
+          + '<div class="t-metrica num">' + gTitle(k) + ': ' + resumo(v) + '</div>'
+          + (rt > 0 ? '<div class="num">' + pct(v, rt) + ' da soja da UF nesta janela</div>' : "");
+        var plot = $("gmap-" + k).getBoundingClientRect();
+        var x = Math.min(Math.max(e.clientX - plot.left, 80), plot.width - 80);
+        tip.style.left = x + "px";
+        tip.style.top = (e.clientY - plot.top) + "px";
+        tip.style.opacity = 1;
+      });
+      svg.addEventListener("mouseleave", function () { $("gtip-" + k).style.opacity = 0; });
+      svg.addEventListener("click", function (e) {
+        var path = e.target.closest ? e.target.closest("path") : null;
+        if (!path) return;
+        var i = SIGLA2IDX[path.id.slice(5)];
+        if (i == null) return;
+        selUF.value = String(i);
+        setModo("um");
+      });
+    });
+  }
+  function gTitle(k) {
+    var g = GRUPOS[k];
+    return g.ids === null ? "Soja em " + selO.value + " e " + selD.value : g.tit;
+  }
+  function recGrupos(k, r) { return (r.dv || []); }
+  function somaGrupo(arr) { return arr.reduce(function (a, c) { return a + c[1]; }, 0); }
+
+  function renderGrupos() {
+    var o = +selO.value, dd = +selD.value;
+    buildGroupSvgs();
+    if (!DADOS.mapa) return;
+    var tot = [], max = [], nativaVals = [];
+    GRUPOS.forEach(function (g, k) {
+      $("gtitle-" + k).textContent = k === 0
+        ? "Soja em " + o + " e " + dd
+        : g.tit + " · " + o + " → " + dd;
+    });
+    GRUPOS.forEach(function (g, k) {
+      var vals = UFS.map(function (u, i) {
+        var r = ufPair(i, o, dd);
+        if (k === 0) return r.p;
+        var s = 0;
+        (r.dv || []).forEach(function (c) { if (g.ids[c[0]]) s += c[1]; });
+        return s;
+      });
+      var mx = vals.reduce(function (a, v) { return Math.max(a, v); }, 0);
+      tot[k] = vals.reduce(function (a, v) { return a + v; }, 0);
+      max[k] = mx;
+      if (k === 4) nativaVals = vals;
+      GSvg[k].querySelectorAll("path").forEach(function (p) {
+        var v = vals[SIGLA2IDX[p.id.slice(5)]];
+        p.setAttribute("fill", mx > 0 && v > 0
+          ? mix(g.rampa[0], g.rampa[1], Math.pow(v / mx, 0.45))
+          : "#f2f4ef");
+      });
+      var grad = "linear-gradient(90deg," + g.rampa[0] + "," + g.rampa[1] + ")";
+      $("gscale-" + k).style.background = grad;
+      $("gscalemax-" + k).textContent = resumo(mx);
+      var topUF = "";
+      var bi = 0;
+      vals.forEach(function (v, i) { if (v > vals[bi]) bi = i; });
+      if (mx > 0) topUF = " · maior: " + UFS[bi][1] + " (" + pct(vals[bi], tot[k]) + ")";
+      $("gtot-" + k).textContent = "Brasil: " + resumo(tot[k]) + topUF;
+    });
+    /* resumo dos seis grupos */
+    var base6 = tot[0] + tot[1] + tot[2] + tot[3] + tot[4] + tot[5];
+    $("g-leg-hint").textContent = "Área de cada grupo sobre o total envolvido (" + resumo(base6) + ") na janela " + o + " → " + dd + ".";
+    $("g-leg").innerHTML = GRUPOS.map(function (g, k) {
+      return '<li><span class="sw" style="background:' + g.rampa[1] + '"></span>'
+        + '<span class="nm">' + gTitle(k) + '</span>'
+        + '<span class="pv num">' + resumo(tot[k]) + ' · ' + pct(tot[k], base6) + '</span></li>';
+    }).join("");
+    /* top nativa */
+    var nt = nativaVals.map(function (v, i) { return { i: i, v: v }; })
+      .sort(function (a, b) { return b.v - a.v; }).filter(function (x) { return x.v > 0; }).slice(0, 6);
+    $("grupos-top-nativa").innerHTML = nt.length
+      ? nt.map(function (x, k) {
+        return '<li><span class="pos num">' + (k + 1) + '.</span><span class="uf">' + UFS[x.i][1]
+          + '</span><span class="v num">' + resumo(x.v) + '</span></li>';
+      }).join("")
+      : '<li><span class="uf" style="color:var(--muted)">Nenhuma área desta origem na janela.</span></li>';
+  }
+
   /* ---- matriz origem × destino ---- */
   function escopoMatriz() {
     if (MODO === "comparar") return -1;                 // Brasil
@@ -1544,6 +1725,7 @@ a { color: var(--forest); }
     renderComp(r.v, r.dv, "comp-bar", "comp-legend");
     renderComp(r.d, r.dd, "comp-bar-d", "comp-legend-d");
     renderMapa();
+    renderGrupos();
     renderMatriz();
     renderFicha();
     renderEvo();
