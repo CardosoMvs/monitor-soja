@@ -482,12 +482,12 @@
   }
   /* paleta dos 6 grupos definida pelo projeto: cor base = ponto máximo da rampa */
   var BASE6 = [
-    { tit: "Soja em {o} e {d}", cor: "#E64291", ids: null },
-    { tit: "Outras culturas → soja", cor: "#5BA9D6", ids: [9, 18, 19, 20, 35, 36, 40, 41, 46, 47, 48, 62] },
-    { tit: "Pastagem → soja", cor: "#F39A00", ids: [15] },
-    { tit: "Mosaico de usos → soja", cor: "#F2C500", ids: [21, 26] },
-    { tit: "Vegetação nativa → soja", cor: "#59A83B", ids: [1, 3, 4, 5, 6, 7, 10, 11, 12, 13, 29, 32, 49, 50, 77, 84] },
-    { tit: "Demais classes → soja", cor: "#8BAF78", ids: [23, 24, 25, 30, 31, 33, 75, 91] }
+    { tit: "Soja em {o} e {d}", cor: "#E83E8C", ids: null },
+    { tit: "Outras culturas → soja", cor: "#A000D8", ids: [9, 18, 19, 20, 35, 36, 40, 41, 46, 47, 48, 62] },
+    { tit: "Pastagem → soja", cor: "#E99400", ids: [15] },
+    { tit: "Mosaico de usos → soja", cor: "#FFD21A", ids: [21, 26] },
+    { tit: "Vegetação nativa → soja", cor: "#238B57", ids: [1, 3, 4, 5, 6, 7, 10, 11, 12, 13, 29, 32, 49, 50, 77, 84] },
+    { tit: "Demais classes → soja", cor: "#777777", ids: [23, 24, 25, 30, 31, 33, 75, 91] }
   ];
   var GRUPOS = BASE6.map(function (g) {
     return { tit: g.tit, cor: g.cor, ids: g.ids ? idsSet(g.ids) : null,

@@ -757,8 +757,14 @@ a { color: var(--forest); }
         <li>A base completa em formato <em>long</em> acompanha o repositório (<em>transicoes_long.csv.gz</em>, UF × origem × destino × transição × classe) para uso em R, Python ou planilhas.</li>
         <li>O mapa usa contornos simplificados das UFs (fonte aberta, precisão ilustrativa — não é cartografia oficial) e cores interpoladas, também indicativas.</li>
         <li>Seis UFs não registraram soja em nenhum ano da série (<span id="cob-zero2">—</span>).</li>
-        <li><strong>Os seis mapas de origem</strong> agregam as classes da Coleção 11 nos grupos: <em>Outras culturas</em> (Silvicultura 9, Cana 20, Dendê 35, Arroz 40, Outras Temporárias 41, Café 46, Citrus 47, Perenes 48, Algodão 62), <em>Pastagem</em> (15), <em>Mosaico de usos</em> (21, 26) e <em>Vegetação nativa</em> (Floresta e formações 1–7, 49; Herbácea/pantanal 10–13, 29, 32, 77, 84); tudo o que resta (Praia 23, Urbano 24, Não vegetada 25, Mineração 30, Água 31, Sol 75, Eólico 91) entra em <em>Demais classes</em>.</li>
-        <li>As cores das classes seguem a <strong>legenda oficial da Coleção 11 do MapBiomas</strong> (tabela de códigos publicada em 13/08/2026). “Outras classes” (cinza claro) e as escalas divergentes de saldo são cores auxiliares deste site; “Permaneceu soja” usa um cinza comum em todos os gráficos.</li>
+        <li><strong>Os seis mapas de origem</strong> agregam as classes da legenda da Coleção 11 nos grupos abaixo (ids que aparecerem na base; alguns são cabeçalhos de grupo e podem não ocorrer isoladamente):<br>
+          • <strong>Soja no início e no fim</strong> — a classe 39 (Soja) presente nos dois anos da janela (permaneceu).<br>
+          • <strong>Outras culturas → Soja</strong> — agro já cultivado: 9 Silvicultura, 20 Cana, 35 Dendê, 40 Arroz, 41 Outras Lavouras Temporárias, 46 Café, 47 Citrus, 48 Outras Lavouras Perenes, 62 Algodão (beta).<br>
+          • <strong>Pastagem → Soja</strong> — 15 Pastagem.<br>
+          • <strong>Mosaico de usos → Soja</strong> — 21 Mosaico de Usos (e 26, quando presente).<br>
+          • <strong>Vegetação nativa → Soja</strong> — florestas e formações naturais: 1 Floresta, 3 Formação Florestal, 4 Formação Savânica, 5 Mangue, 6 Floresta Alagável, 7 Savana Alagada (beta), 10 Vegetação Herbácea, 11 Campo Alagado e Área Pantanosa, 12 Formação Campestre, 29 Afloramento Rochoso, 32 Apicum, 49 Restinga Arbórea, 50 Restinga Herbácea ou Arbustiva, 77 Formação Herbáceo-Arbustiva, 84 Marisma (beta).<br>
+          • <strong>Demais classes → Soja</strong> — 23 Praia, Duna e Areal, 24 Área Urbanizada, 25 Outras Áreas não Vegetadas, 30 Mineração, 31 Aquicultura, 33 Rio, Lago e Oceano, 75 Usina Fotovoltaica, 91 Parque eólico (beta).</li>
+        <li>As cores dos seis mapas de origem são a <strong>paleta fixa do projeto</strong> (#E83E8C, #A000D8, #E99400, #FFD21A, #238B57, #777777, nesta ordem dos grupos); dentro de cada mapa, os tons vão de tinta clara da própria matiz até a cor cheia no estado de maior área. Já as cores por classe nas barras/composições seguem a <strong>legenda oficial da Coleção 11</strong> (tabela publicada em 13/08/2026); “Outras classes” e as escalas de saldo são cores auxiliares deste site.</li>
       </ul>
     </div>
   </div>
@@ -1258,12 +1264,12 @@ a { color: var(--forest); }
   }
   /* paleta dos 6 grupos definida pelo projeto: cor base = ponto máximo da rampa */
   var BASE6 = [
-    { tit: "Soja em {o} e {d}", cor: "#E64291", ids: null },
-    { tit: "Outras culturas → soja", cor: "#5BA9D6", ids: [9, 18, 19, 20, 35, 36, 40, 41, 46, 47, 48, 62] },
-    { tit: "Pastagem → soja", cor: "#F39A00", ids: [15] },
-    { tit: "Mosaico de usos → soja", cor: "#F2C500", ids: [21, 26] },
-    { tit: "Vegetação nativa → soja", cor: "#59A83B", ids: [1, 3, 4, 5, 6, 7, 10, 11, 12, 13, 29, 32, 49, 50, 77, 84] },
-    { tit: "Demais classes → soja", cor: "#8BAF78", ids: [23, 24, 25, 30, 31, 33, 75, 91] }
+    { tit: "Soja em {o} e {d}", cor: "#E83E8C", ids: null },
+    { tit: "Outras culturas → soja", cor: "#A000D8", ids: [9, 18, 19, 20, 35, 36, 40, 41, 46, 47, 48, 62] },
+    { tit: "Pastagem → soja", cor: "#E99400", ids: [15] },
+    { tit: "Mosaico de usos → soja", cor: "#FFD21A", ids: [21, 26] },
+    { tit: "Vegetação nativa → soja", cor: "#238B57", ids: [1, 3, 4, 5, 6, 7, 10, 11, 12, 13, 29, 32, 49, 50, 77, 84] },
+    { tit: "Demais classes → soja", cor: "#777777", ids: [23, 24, 25, 30, 31, 33, 75, 91] }
   ];
   var GRUPOS = BASE6.map(function (g) {
     return { tit: g.tit, cor: g.cor, ids: g.ids ? idsSet(g.ids) : null,
