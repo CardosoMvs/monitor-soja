@@ -358,6 +358,7 @@
   var tip = $("mapa-tip");
 
   function gK(metrica) { return metrica.charAt(1); }
+  function siglaDe(id) { return id.slice(id.indexOf("-") + 1); }
   function valoresMapa(o, dd, metrica) {
     return UFS.map(function (u, i) {
       var r = ufPair(i, o, dd);
@@ -520,7 +521,7 @@
         var path = e.target.closest ? e.target.closest("path") : null;
         var tip = $("gtip-" + k);
         if (!path) { tip.style.opacity = 0; return; }
-        var i = SIGLA2IDX[path.id.slice(5)];
+        var i = SIGLA2IDX[siglaDe(path.id)];
         if (i == null) { tip.style.opacity = 0; return; }
         var o = +selO.value, dd = +selD.value;
         var r = ufPair(i, o, dd);
@@ -539,7 +540,7 @@
       svg.addEventListener("click", function (e) {
         var path = e.target.closest ? e.target.closest("path") : null;
         if (!path) return;
-        var i = SIGLA2IDX[path.id.slice(5)];
+        var i = SIGLA2IDX[siglaDe(path.id)];
         if (i == null) return;
         selUF.value = String(i);
         setModo("um");
@@ -576,7 +577,7 @@
       max[k] = mx;
       if (k === 4) nativaVals = vals;
       GSvg[k].querySelectorAll("path").forEach(function (p) {
-        var v = vals[SIGLA2IDX[p.id.slice(5)]];
+        var v = vals[SIGLA2IDX[siglaDe(p.id)]];
         p.setAttribute("fill", mx > 0 && v > 0
           ? mix(g.rampa[0], g.rampa[1], Math.pow(v / mx, 0.45))
           : "#f2f4ef");
