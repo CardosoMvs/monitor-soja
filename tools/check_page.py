@@ -57,7 +57,7 @@ var REG = {};
 function getEl(id) { if (!REG[id]) REG[id] = new El(id); return REG[id]; }
 getEl("mapa-metrica").value = "virou";
 getEl("matriz-metrica").value = "virou";
-getEl("uf-select").value = "-1";
+getEl("escopo").value = "-1";
 var document = {
   getElementById: function (id) { return getEl(id); },
   createElement: function (t) { return new El("", t); },
@@ -83,7 +83,7 @@ var mt = null; paths.forEach(function (p) { if (p.id === "mp-mt") mt = p; });
 step("boot: contagem de paths do mapa", function () { log("paths:", String(paths.length)); });
 step("destinos p/ origem 1985", function () { osel.value = "1985"; osel._fire("change", {}); log("n destinos:", String(dsel.children.length), "valor:", dsel.value); });
 step("metrica saldo", function () { mm.value = "saldo"; mm._fire("change", {}); log("MT fill:", mt.getAttribute("fill")); });
-step("clique no mapa (MT)", function () { mt._fire("click", { target: { closest: function () { return mt; } } }); log("selUF:", REG["uf-select"].value); });
+step("clique no mapa (MT)", function () { mt._fire("click", { target: { closest: function () { return mt; } } }); log("escopo:", REG["escopo"].value); });
 step("tooltip mapa (simulado)", function () {
   var plot = document.getElementById("map-plot");
   plot._fire("mousemove", { clientX: 100, clientY: 100, target: mt });
@@ -92,13 +92,13 @@ step("tooltip mapa (simulado)", function () {
 step("clique correto no SVG (com closest)", function () {
   var svg = REG["brazil-map"].children[0];
   svg._fire("click", { target: { closest: function (s) { return s === "path" ? mt : null; } } });
-  log("selUF apos clique:", REG["uf-select"].value);
+  log("escopo apos clique:", REG["escopo"].value);
   log("modo:", REG["mode-um"]._cl && Object.keys(REG["mode-um"]._handlers) ? "ver botao classe" : "");
 });
 step("minis de evolucao (HTML string)", function () {
   log("evo-multi html len:", String(REG["evo-multi"]._html ? REG["evo-multi"].innerHTML.length : "0"), "| mini-evo presentes:", String(REG["evo-multi"].innerHTML.split("mini-evo").length - 2));
 });
-step("voltar p/ modo um", function () { mu._fire("click", {}); log("selUF mantido:", REG["uf-select"].value); });
+step("voltar p/ modo um", function () { mu._fire("click", {}); log("escopo mantido:", REG["escopo"].value); });
 step("origem 2018 de volta", function () { osel.value = "2018"; osel._fire("change", {}); });
 step("matriz renderizada", function () {
   log("células (html len):", String(REG["matriz-grid"].innerHTML.length > 100000 ? ">100k" : String(REG["matriz-grid"].innerHTML.length)),
@@ -121,6 +121,20 @@ step("hover na evolucao", function () {
   var col = REG["evo-cols"].children[5];
   REG["evo-single"]._fire("mousemove", { target: col });
   log("readout hover:", String(REG["evo-readout"].innerHTML).slice(0, 60));
+});
+step("escopo = Mato Grosso", function () {
+  var esc = document.getElementById("escopo");
+  esc.value = "10"; esc._fire("change", {});
+  log("st-ufs-l:", REG["st-ufs-l"].textContent);
+  log("ficha tem sankey:", String(REG["state-panel"]._html.indexOf("VIRAM SOJA") >= 0));
+  log("ranking destaca MT:", String(REG["rank-list"].innerHTML.indexOf("rank-row hl") >= 0));
+  log("evo título:", REG["evo-titulo"].textContent.slice(0, 40));
+  log("matriz escopo:", REG["matriz-escopo"].textContent.slice(0, 40));
+});
+step("escopo de volta ao Brasil", function () {
+  var esc = document.getElementById("escopo");
+  esc.value = "-1"; esc._fire("change", {});
+  log("st-ufs-l:", REG["st-ufs-l"].textContent, "| st-ufs:", REG["st-ufs"].textContent);
 });
 LOG.push("__OK__");
 LOG.join("\n");

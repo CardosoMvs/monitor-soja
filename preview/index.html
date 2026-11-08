@@ -103,7 +103,7 @@ a { color: var(--forest); }
   background: var(--surface-soft); min-width: 122px;
 }
 .console select:focus-visible, #uf-focus, a:focus-visible,
-#uf-select:focus-visible, #mapa-metrica:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
+#mapa-metrica:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
 .console .janela {
   margin-left: auto; font-size: 0.8rem; font-weight: 700; color: var(--forest);
   white-space: nowrap;
@@ -237,6 +237,7 @@ a { color: var(--forest); }
 .mini-evo .evo-readout { margin-top: 8px; font-size: 0.72rem; min-height: 30px; }
 .mini-evo .evo-readout .ano { font-size: 0.8rem; }
 .evo-scale { margin-top: 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.rank-row.hl { border-color: var(--forest); background: #f3f7ef; box-shadow: inset 3px 0 0 var(--forest); margin-top: 10px; }
 .rank-empty { margin-top: 16px; padding: 20px 6px; color: var(--muted); font-size: 0.92rem; }
 
 /* --- composição --- */
@@ -371,11 +372,6 @@ a { color: var(--forest); }
 }
 .mode-switch button.on { background: var(--forest); color: #fff; }
 .mode-row label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
-#uf-select {
-  font-family: var(--font); font-size: 0.95rem; font-weight: 600; color: var(--ink);
-  padding: 9px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface);
-  min-width: 230px;
-}
 #uf-chips { display: none; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 7px; margin-top: 14px; }
 #uf-chips.show { display: grid; }
 .chip {
@@ -517,6 +513,10 @@ a { color: var(--forest); }
       <span class="lbl">Fim</span>
       <select id="ano-destino" aria-label="Ano de fim"></select>
     </span>
+    <span class="grp">
+      <span class="lbl">Escopo</span>
+      <select id="escopo" aria-label="Escopo: Brasil ou estado"></select>
+    </span>
     <div class="janela num">
       <small>Trajetória</small>
       <span id="janela-txt">—</span>
@@ -548,7 +548,7 @@ a { color: var(--forest); }
       <div class="stat"><div class="v num" id="st-deixou">—</div><div class="l">Deixaram de ser soja (ha)</div></div>
       <div class="stat"><div class="v num" id="st-perm">—</div><div class="l">Permaneceram soja (ha)</div></div>
       <div class="stat"><div class="v num" id="st-saldo">—</div><div class="l">Saldo líquido (ha)</div></div>
-      <div class="stat"><div class="v num" id="st-ufs">—</div><div class="l">UFs com soja na janela</div></div>
+      <div class="stat"><div class="v num" id="st-ufs">—</div><div class="l" id="st-ufs-l">UFs com soja na janela</div></div>
     </div>
 
     <div class="comp-wrap">
@@ -720,8 +720,7 @@ a { color: var(--forest); }
         <button type="button" id="mode-um" class="on">Um estado (detalhe expansivo)</button>
         <button type="button" id="mode-cmp">Comparar estados</button>
       </div>
-      <label for="uf-select" id="uf-label">Selecionar UF</label>
-      <select id="uf-select"><option value="-1">Brasil (todas as UFs)</option></select>
+      <span class="hint" id="escopo-hint">O estado analisado é o <strong>Escopo</strong> do console (ou clique num estado no mapa); “Um estado” abre a ficha dele, com sankey.</span>
       <span class="cmp-count" id="cmp-count" hidden>0 de 5 selecionados</span>
     </div>
     <div id="uf-chips"></div>
@@ -878,7 +877,7 @@ a { color: var(--forest); }
   UFS.forEach(function (u, i) { SIGLA2IDX[CODE2SIGLA[u[0]]] = i; });
 
   /* ---- console ---- */
-  var selO = $("ano-origem"), selD = $("ano-destino"), selUF = $("uf-select");
+  var selO = $("ano-origem"), selD = $("ano-destino"), selUF = $("escopo");
   var O0 = 2018, D0 = 2024;
 
   ANOS.slice(0, -1).forEach(function (a) {
@@ -900,6 +899,10 @@ a { color: var(--forest); }
   opcoesDestino();
   selO.value = String(O0); selD.value = String(D0);
 
+  var brOpt = document.createElement("option");
+  brOpt.value = "-1";
+  brOpt.textContent = "Brasil (todas as UFs)";
+  selUF.appendChild(brOpt);
   UFS.forEach(function (u, i) {
     var o = document.createElement("option");
     o.value = String(i);
@@ -917,8 +920,6 @@ a { color: var(--forest); }
     $("mode-um").className = m === "um" ? "on" : "";
     $("mode-cmp").className = m === "comparar" ? "on" : "";
     var cmp = m === "comparar";
-    $("uf-label").hidden = cmp;
-    $("uf-select").hidden = cmp;
     $("cmp-count").hidden = !cmp;
     $("uf-chips").className = cmp ? "show" : "";
     $("state-panel").hidden = cmp;
@@ -996,7 +997,15 @@ a { color: var(--forest); }
   /* ---- renders ---- */
   function renderResumo() {
     var o = +selO.value, dd = +selD.value;
-    var r = agrega(o, dd);
+    var ui = +selUF.value;
+    var br = agrega(o, dd);
+    var r;
+    if (ui < 0) {
+      r = br;
+    } else {
+      var rec = ufPair(ui, o, dd);
+      r = { v: rec.v || 0, d: rec.d || 0, p: rec.p || 0, dv: rec.dv || [], dd: rec.dd || [], n: 1 };
+    }
     $("badge-valor").textContent = resumo(r.v);
     $("badge-rotulo").textContent = "viraram soja · " + o + " → " + dd;
     $("janela-txt").textContent = o + " → " + dd;
@@ -1005,18 +1014,20 @@ a { color: var(--forest); }
     $("st-deixou").textContent = resumo(r.d);
     $("st-perm").textContent = resumo(r.p);
     $("st-saldo").textContent = resumo(r.v - r.d);
-    $("st-ufs").textContent = r.n + " de 27";
-    $("rank-desc").textContent = "Barra única empilhada por UF — virou (verde), deixou de ser (âmbar) e permaneceu (cinza) entre " + o + " e " + dd + ", em hectares, numa única escala para preservar as proporções reais.";
-    $("comp-v-hint").textContent = "Composição das áreas que viraram soja (" + resumo(r.v) + ") pelas classes de uso no ano de origem (" + o + ").";
-    $("comp-d-hint").textContent = "Composição das áreas que deixaram de ser soja (" + resumo(r.d) + ") pelas classes de uso no ano de destino (" + dd + ").";
+    $("st-ufs").textContent = ui < 0 ? (r.n + " de 27") : pct(r.v + r.p, br.v + br.p);
+    $("st-ufs-l").textContent = ui < 0 ? "UFs com soja na janela" : "Soja do escopo ÷ soja do Brasil";
+    $("rank-desc").textContent = "Barra única empilhada por UF — virou (verde), deixou de ser (âmbar) e permaneceu (cinza) entre " + o + " e " + dd + ", em hectares, numa única escala para preservar as proporções reais." + (ui >= 0 ? " O estado do escopo aparece destacado." : "");
+    $("comp-v-hint").textContent = "Composição das áreas que viraram soja (" + resumo(r.v) + ") pelas classes de uso no ano de início (" + o + ").";
+    $("comp-d-hint").textContent = "Composição das áreas que deixaram de ser soja (" + resumo(r.d) + ") pelas classes de uso no ano de fim (" + dd + ").";
     return r;
   }
 
   function renderRanking(r) {
     var o = +selO.value, dd = +selD.value;
+    var ui = +selUF.value;
     var lista = UFS.map(function (u, i) {
       var rec = ufPair(i, o, dd);
-      return { label: u[1], v: rec.v, d: rec.d, p: rec.p };
+      return { i: i, label: u[1], v: rec.v || 0, d: rec.d || 0, p: rec.p || 0 };
     });
     lista.forEach(function (e) { e.t = e.v + e.d + e.p; });
     lista.sort(function (a, b) { return (b.v - a.v) || (b.d - a.d); });
@@ -1041,7 +1052,7 @@ a { color: var(--forest); }
         var rot = frac >= 0.12 ? '<span class="seg-rot num">' + resumo(area) + '</span>' : "";
         return '<span class="seg ' + cls + '" style="flex:' + area + '" title="' + pct(area, e.t) + '">' + rot + '</span>';
       }
-      html += '<div class="rank-row"><div class="rank-head">'
+      html += '<div class="rank-row' + (MODO === "um" && e.i === ui ? ' hl' : '') + '"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
         + '<span class="val num">' + resumo(e.v + e.p) + ' mant. · saldo ' + resumo(e.v - e.d) + '</span></div>'
@@ -1733,7 +1744,7 @@ a { color: var(--forest); }
 
   selO.addEventListener("change", function () { opcoesDestino(); renderAll(); });
   selD.addEventListener("change", renderAll);
-  selUF.addEventListener("change", function () { renderFicha(); renderEvo(); renderMatriz(); });
+  selUF.addEventListener("change", renderAll);
 
   $("cob-zero").textContent = SEM_DADOS.join(" · ") || "—";
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";

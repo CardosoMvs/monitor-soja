@@ -111,7 +111,7 @@
   UFS.forEach(function (u, i) { SIGLA2IDX[CODE2SIGLA[u[0]]] = i; });
 
   /* ---- console ---- */
-  var selO = $("ano-origem"), selD = $("ano-destino"), selUF = $("uf-select");
+  var selO = $("ano-origem"), selD = $("ano-destino"), selUF = $("escopo");
   var O0 = 2018, D0 = 2024;
 
   ANOS.slice(0, -1).forEach(function (a) {
@@ -133,6 +133,10 @@
   opcoesDestino();
   selO.value = String(O0); selD.value = String(D0);
 
+  var brOpt = document.createElement("option");
+  brOpt.value = "-1";
+  brOpt.textContent = "Brasil (todas as UFs)";
+  selUF.appendChild(brOpt);
   UFS.forEach(function (u, i) {
     var o = document.createElement("option");
     o.value = String(i);
@@ -150,8 +154,6 @@
     $("mode-um").className = m === "um" ? "on" : "";
     $("mode-cmp").className = m === "comparar" ? "on" : "";
     var cmp = m === "comparar";
-    $("uf-label").hidden = cmp;
-    $("uf-select").hidden = cmp;
     $("cmp-count").hidden = !cmp;
     $("uf-chips").className = cmp ? "show" : "";
     $("state-panel").hidden = cmp;
@@ -229,7 +231,15 @@
   /* ---- renders ---- */
   function renderResumo() {
     var o = +selO.value, dd = +selD.value;
-    var r = agrega(o, dd);
+    var ui = +selUF.value;
+    var br = agrega(o, dd);
+    var r;
+    if (ui < 0) {
+      r = br;
+    } else {
+      var rec = ufPair(ui, o, dd);
+      r = { v: rec.v || 0, d: rec.d || 0, p: rec.p || 0, dv: rec.dv || [], dd: rec.dd || [], n: 1 };
+    }
     $("badge-valor").textContent = resumo(r.v);
     $("badge-rotulo").textContent = "viraram soja · " + o + " → " + dd;
     $("janela-txt").textContent = o + " → " + dd;
@@ -238,18 +248,20 @@
     $("st-deixou").textContent = resumo(r.d);
     $("st-perm").textContent = resumo(r.p);
     $("st-saldo").textContent = resumo(r.v - r.d);
-    $("st-ufs").textContent = r.n + " de 27";
-    $("rank-desc").textContent = "Barra única empilhada por UF — virou (verde), deixou de ser (âmbar) e permaneceu (cinza) entre " + o + " e " + dd + ", em hectares, numa única escala para preservar as proporções reais.";
-    $("comp-v-hint").textContent = "Composição das áreas que viraram soja (" + resumo(r.v) + ") pelas classes de uso no ano de origem (" + o + ").";
-    $("comp-d-hint").textContent = "Composição das áreas que deixaram de ser soja (" + resumo(r.d) + ") pelas classes de uso no ano de destino (" + dd + ").";
+    $("st-ufs").textContent = ui < 0 ? (r.n + " de 27") : pct(r.v + r.p, br.v + br.p);
+    $("st-ufs-l").textContent = ui < 0 ? "UFs com soja na janela" : "Soja do escopo ÷ soja do Brasil";
+    $("rank-desc").textContent = "Barra única empilhada por UF — virou (verde), deixou de ser (âmbar) e permaneceu (cinza) entre " + o + " e " + dd + ", em hectares, numa única escala para preservar as proporções reais." + (ui >= 0 ? " O estado do escopo aparece destacado." : "");
+    $("comp-v-hint").textContent = "Composição das áreas que viraram soja (" + resumo(r.v) + ") pelas classes de uso no ano de início (" + o + ").";
+    $("comp-d-hint").textContent = "Composição das áreas que deixaram de ser soja (" + resumo(r.d) + ") pelas classes de uso no ano de fim (" + dd + ").";
     return r;
   }
 
   function renderRanking(r) {
     var o = +selO.value, dd = +selD.value;
+    var ui = +selUF.value;
     var lista = UFS.map(function (u, i) {
       var rec = ufPair(i, o, dd);
-      return { label: u[1], v: rec.v, d: rec.d, p: rec.p };
+      return { i: i, label: u[1], v: rec.v || 0, d: rec.d || 0, p: rec.p || 0 };
     });
     lista.forEach(function (e) { e.t = e.v + e.d + e.p; });
     lista.sort(function (a, b) { return (b.v - a.v) || (b.d - a.d); });
@@ -274,7 +286,7 @@
         var rot = frac >= 0.12 ? '<span class="seg-rot num">' + resumo(area) + '</span>' : "";
         return '<span class="seg ' + cls + '" style="flex:' + area + '" title="' + pct(area, e.t) + '">' + rot + '</span>';
       }
-      html += '<div class="rank-row"><div class="rank-head">'
+      html += '<div class="rank-row' + (MODO === "um" && e.i === ui ? ' hl' : '') + '"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
         + '<span class="val num">' + resumo(e.v + e.p) + ' mant. · saldo ' + resumo(e.v - e.d) + '</span></div>'
@@ -966,7 +978,7 @@
 
   selO.addEventListener("change", function () { opcoesDestino(); renderAll(); });
   selD.addEventListener("change", renderAll);
-  selUF.addEventListener("change", function () { renderFicha(); renderEvo(); renderMatriz(); });
+  selUF.addEventListener("change", renderAll);
 
   $("cob-zero").textContent = SEM_DADOS.join(" · ") || "—";
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";
