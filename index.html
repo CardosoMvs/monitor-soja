@@ -242,7 +242,7 @@ a { color: var(--forest); }
 .comp-wrap .hint { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
 .comp-item2 + .comp-item2 { margin-top: 22px; }
 .stack { display: flex; height: 26px; border-radius: 4px; overflow: hidden; background: var(--surface-soft); }
-.stack .seg { min-width: 0; }
+.stack .seg { min-width: 0; box-shadow: inset 0 0 0 1px rgba(16, 56, 43, 0.16); }
 .stack .seg-se { background: var(--forest); }
 .stack .seg-sd { background: var(--atencao); }
 .stack .seg-sp { background: var(--perm); }
@@ -382,7 +382,7 @@ a { color: var(--forest); }
 .cmp-head h4 { font-size: 0.98rem; }
 .cmp-head .saldo { margin-left: auto; font-weight: 800; font-size: 0.88rem; white-space: nowrap; }
 .cmp-bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: var(--surface-soft); margin-top: 10px; }
-.cmp-bar .seg { min-width: 0; }
+.cmp-bar .seg { min-width: 0; box-shadow: inset 0 0 0 1px rgba(16, 56, 43, 0.16); }
 .cmp-bar .seg-se { background: var(--forest); }
 .cmp-bar .seg-sd { background: var(--atencao); }
 .cmp-bar .seg-sp { background: var(--perm); }
@@ -709,7 +709,7 @@ a { color: var(--forest); }
         <li>A base completa em formato <em>long</em> acompanha o repositório (<em>transicoes_long.csv.gz</em>, UF × origem × destino × transição × classe) para uso em R, Python ou planilhas.</li>
         <li>O mapa usa contornos simplificados das UFs (fonte aberta, precisão ilustrativa — não é cartografia oficial) e cores interpoladas, também indicativas.</li>
         <li>Seis UFs não registraram soja em nenhum ano da série (<span id="cob-zero2">—</span>).</li>
-        <li>As cores das classes são <em>indicativas</em>, apenas para leitura visual — não seguem a legenda oficial do MapBiomas.</li>
+        <li>As cores das classes seguem a <strong>legenda oficial da Coleção 11 do MapBiomas</strong> (tabela de códigos publicada em 13/08/2026). “Outras classes” (cinza claro) e as escalas divergentes de saldo são cores auxiliares deste site; “Permaneceu soja” usa um cinza comum em todos os gráficos.</li>
       </ul>
     </div>
   </div>
@@ -731,15 +731,15 @@ a { color: var(--forest); }
   var $ = function (id) { return document.getElementById(id); };
   var fmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 
-  /* cores indicativas por classe (não oficiais MapBiomas) */
+  /* cores OFICIAIS da Coleção 11 do MapBiomas (legenda publicada em 13/08/2026) */
   var CORES = {
-    3: "#2e7d5b", 4: "#79c486", 5: "#57a37a", 6: "#5fb37a", 7: "#66a9a0",
-    9: "#6f8fb5", 11: "#7aa6c2", 12: "#a8c48a", 13: "#c9dfae", 15: "#d9c87c",
-    20: "#c99a6b", 21: "#9aa5a0", 23: "#e0d3a3", 24: "#c06058", 25: "#b9b1a3",
-    29: "#a8a299", 30: "#8d9298", 31: "#5f7fa8", 32: "#93b7a8", 33: "#7aa6c2",
-    35: "#c7a15c", 40: "#e2b93b", 41: "#dcc06a", 46: "#8a6f52", 47: "#d8b268",
-    48: "#c49a4f", 49: "#4d9e78", 50: "#90c290", 62: "#c9b6d9", 75: "#b58fb5",
-    84: "#8fb0bb", 91: "#8f9d95"
+    3: "#1f8d49", 4: "#7dc975", 5: "#04381d", 6: "#007785", 7: "#228c70", 9: "#7a5900",
+    11: "#517979", 12: "#d6bc74", 15: "#ede8e3", 20: "#db7093", 21: "#fffec3",
+    23: "#ffa07a", 24: "#49271e", 25: "#db4d4f", 29: "#ad5100", 30: "#9c0027",
+    31: "#091077", 32: "#fc8114", 33: "#2532e4", 35: "#9065d0", 40: "#c71585",
+    41: "#f54ca9", 46: "#d68fe2", 47: "#9932cc", 48: "#e6ccff", 49: "#02d659",
+    50: "#ffaa5f", 62: "#ff69b4", 75: "#757272", 84: "#81dbbf", 91: "#403d3e",
+    39: "#f5b3c8"
   };
   var PALETA = ["#2e7d5b", "#d9c87c", "#9aa5a0", "#dcc06a", "#6f8fb5", "#a8c48a", "#c06058", "#e2b93b", "#5fb37a", "#b58fb5"];
   function corCls(id) {
