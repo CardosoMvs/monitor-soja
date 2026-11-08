@@ -3,7 +3,7 @@
 
 Entrada  : todas-transicoes/soja39_<UF>_origem<ANO>.csv  (27 UFs, origens 1985-2024,
            cada arquivo com todos os destinos possíveis até 2025)
-Saída    : github-pages/data.js  (objeto DADOS compacto, agrupado por UF)
+Saída    : index.html + data.js na RAIZ do repositório (GitHub Pages serve de /)
 
 Formato do DADOS:
 {
@@ -24,7 +24,7 @@ from collections import defaultdict
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(BASE, "todas-transicoes")
-OUT_DIR = os.path.join(BASE, "github-pages")
+OUT_DIR = BASE  # site na raiz, para o GitHub Pages reconhecer index.html direto
 
 UF_LABELS = {
     "Acre": "Acre", "Alagoas": "Alagoas", "Amapa": "Amapá", "Amazonas": "Amazonas",
