@@ -18,6 +18,7 @@ Formato do DADOS:
 Entradas que arredondam para 0 (< 0,05 ha) são descartadas.
 """
 import csv
+import gzip
 import json
 import os
 from collections import defaultdict
@@ -169,6 +170,25 @@ with open(out_path, "w", encoding="utf-8") as f:
     f.write(";\n")
 
 size_mb = os.path.getsize(out_path) / 1e6
+
+# --------- base "tidy" (formato long) para análise externa (R, Python) ---------
+TIPO_NOME = {TIPO_V: "Virou soja", TIPO_D: "Deixou de ser soja", TIPO_P: "Permaneceu soja"}
+out_csv = os.path.join(BASE, "transicoes_long.csv.gz")
+n_csv = 0
+with gzip.open(out_csv, "wt", encoding="utf-8", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["uf", "ano_origem", "ano_destino", "transicao", "classe_id", "classe_nome", "area_ha"])
+    for key in sorted(agg, key=lambda k: (ordem_uf[k[0]], k[1], k[2], k[3])):
+        uf, ano_o, ano_d, tipo = key
+        for cid, v in sorted(agg[key].items()):
+            if v < 0.05:
+                continue
+            w.writerow([UF_LABELS[uf], ano_o, ano_d, TIPO_NOME[tipo], cid, classes[cid],
+                        round(v, 2)])
+            n_csv += 1
+csv_mb = os.path.getsize(out_csv) / 1e6
+print("transicoes_long.csv.gz : %d linhas, %.2f MB (gzip)" % (n_csv, csv_mb))
+
 print("arquivos lidos        : %d (vazios: %d)" % (arquivos, len(arquivos_vazios)))
 print("linhas lidas          : %d" % rows_lidas)
 print("grupos (uf/o/d/tipo)  : %d | entradas (classe/area): %d" % (n_grupos, n_entradas))

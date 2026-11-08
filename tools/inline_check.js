@@ -163,6 +163,7 @@
     renderFicha();
     renderEvo();
     renderMapa();
+    renderMatriz();
   }
   function serieTem() {
     if (+selUF.value < 0) return true;
@@ -261,25 +262,27 @@
       return;
     }
     $("rank-empty").hidden = true;
+    $("rank-scale").textContent = "Escalas (da menor à maior UF na janela): virou até " + resumo(maxV)
+      + " · deixou até " + resumo(maxD) + " · permaneceu até " + resumo(maxP) + " — cada barra mostra o valor ao lado.";
     var html = "", ordem = 0;
     lista.forEach(function (e) {
       if (e.v <= 0 && e.d <= 0 && e.p <= 0) return;
       ordem++;
+      var linhas = "";
+      linhas += e.v > 0
+        ? '<div class="bar-track"><div class="bar" style="width:' + Math.max(1.5, 100 * e.v / maxV).toFixed(1) + '%"></div><span class="bar-val num">' + resumo(e.v) + '</span></div>'
+        : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
+      linhas += e.d > 0
+        ? '<div class="bar-track"><div class="bar deixou" style="width:' + Math.max(1.5, 100 * e.d / maxD).toFixed(1) + '%"></div><span class="bar-val num">−' + resumo(e.d) + '</span></div>'
+        : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
+      linhas += e.p > 0
+        ? '<div class="bar-track"><div class="bar perm" style="width:' + Math.max(1.5, 100 * e.p / maxP).toFixed(1) + '%"></div><span class="bar-val num">' + resumo(e.p) + '</span></div>'
+        : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
       html += '<div class="rank-row"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
-        + '<span class="val num">' + resumo(e.v)
-        + (e.d > 0 ? ' <small>· −' + resumo(e.d).replace("−", "") + '</small>' : '')
-        + '</span></div>'
-        + '<div class="bars">'
-        + '<div class="bar-track"><div class="bar" style="width:' + (e.v > 0 ? Math.max(1.5, 100 * e.v / maxV).toFixed(1) : "0") + '%"></div></div>'
-        + (e.d > 0
-          ? '<div class="bar-track"><div class="bar deixou" style="width:' + Math.max(1.5, 100 * e.d / maxD).toFixed(1) + '%"></div></div>'
-          : '<div class="bar-track"><div class="bar-zero-fill"></div></div>')
-        + (e.p > 0
-          ? '<div class="bar-track"><div class="bar perm" style="width:' + Math.max(1.5, 100 * e.p / maxP).toFixed(1) + '%"></div></div>'
-          : '<div class="bar-track"><div class="bar-zero-fill"></div></div>')
-        + '</div></div>';
+        + '<span class="val num">saldo ' + resumo(e.v - e.d) + '</span></div>'
+        + '<div class="bars">' + linhas + '</div></div>';
     });
     $("rank-list").innerHTML = html;
   }
@@ -298,7 +301,7 @@
       { sw: "var(--perm)", nm: "Permaneceu soja", v: r.p }
     ].map(function (c) {
       return '<div class="comp-item"><span class="sw" style="background:' + c.sw + '"></span>'
-        + '<span class="nm">' + c.nm + '</span><span class="pv num">' + pct(c.v, t) + '</span></div>';
+        + '<span class="nm">' + c.nm + '</span><span class="pv num">' + pct(c.v, t) + ' · ' + resumo(c.v) + '</span></div>';
     }).join("");
   }
 
@@ -319,7 +322,7 @@
       var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
       return '<div class="comp-item"><span class="sw" style="background:' + cor + '"></span>'
         + '<span class="nm">' + (c.id === null ? "Outras classes" : CLS[c.id]) + '</span>'
-        + '<span class="pv num">' + pct(c.area, total) + '</span></div>';
+        + '<span class="pv num">' + pct(c.area, total) + ' · ' + resumo(c.area) + '</span></div>';
     }).join("");
   }
 
@@ -444,6 +447,137 @@
   }
   $("mapa-metrica").addEventListener("change", renderMapa);
 
+  /* ---- matriz origem × destino ---- */
+  function escopoMatriz() {
+    if (MODO === "comparar") return -1;                 // Brasil
+    return +selUF.value;                                 // inclui -1 = Brasil
+  }
+  function corMetrica(metrica, v, max) {
+    if (metrica === "saldo") return corSaldo(v, max);
+    var r = RAMPA[metrica];
+    return mix(r[0], r[1], Math.pow(Math.max(v, 0) / max, 0.45));
+  }
+  function renderMatriz() {
+    var o0 = ANOS[0], oMax = ANOS[ANOS.length - 2], dMax = ANOS[ANOS.length - 1];
+    var metrica = $("matriz-metrica").value;
+    var ui = escopoMatriz();
+    var nome = ui < 0 ? "Brasil (todas as UFs)" : UFS[ui][1];
+    $("matriz-escopo").textContent = "Escopo: " + nome
+      + (MODO === "comparar" ? " · no modo comparar a matriz mostra o Brasil" : "")
+      + ". 820 janelas de uma vez.";
+    function val(o, d) {
+      var m = ui < 0 ? agrega(o, d) : ufPair(ui, o, d);
+      if (metrica === "virou") return m.v;
+      if (metrica === "deixou") return m.d;
+      if (metrica === "perm") return m.p;
+      return m.v - m.d;
+    }
+    var max = 0, minS = 0, maxPos = 0;
+    var ANOS_S1 = ANOS.slice(0, -1), ANOS_D = ANOS.slice(1);
+    ANOS_S1.forEach(function (o) {
+      ANOS_D.forEach(function (d) {
+        if (d <= o) return;
+        var v = val(o, d);
+        max = Math.max(max, Math.abs(v));
+        minS = Math.min(minS, v); maxPos = Math.max(maxPos, v);
+      });
+    });
+    var linhas = "";
+    ANOS_D.forEach(function (d) {
+      linhas += '<div class="mx-h"><span>' + d + '</span></div>';
+    });
+    ANOS_S1.forEach(function (o) {
+      linhas += '<div class="mx-lbl num">' + o + '</div>';
+      ANOS_D.forEach(function (d) {
+        if (d <= o) { linhas += '<i class="mx-e"></i>'; return; }
+        var v = val(o, d);
+        var cor = max > 0 ? corMetrica(metrica, v, max) : "#edf1eb";
+        var m = ui < 0 ? agrega(o, d) : ufPair(ui, o, d);
+        linhas += '<div class="mx-c" data-o="' + o + '" data-d="' + d + '" style="background:' + cor
+          + '" title="' + o + ' → ' + d + ' · virou ' + resumo(m.v) + ' · deixou ' + resumo(m.d)
+          + ' · permaneceu ' + resumo(m.p) + '"></div>';
+      });
+    });
+    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:5px;line-height:normal;font-size:0.55rem">origem ↓<br>destino →</div>' + linhas;
+    if (max <= 0) {
+      $("matriz-grad").style.background = "#edf1eb";
+      $("matriz-min").textContent = "0"; $("matriz-max").textContent = "sem dados";
+    } else if (metrica === "saldo") {
+      $("matriz-grad").style.background = "linear-gradient(90deg," + SALDO_NEG + "," + SALDO_MEIO + " 50%," + SALDO_POS + ")";
+      $("matriz-min").textContent = "−" + resumo(Math.abs(minS));
+      $("matriz-max").textContent = "+" + resumo(maxPos);
+    } else {
+      $("matriz-grad").style.background = "linear-gradient(90deg," + RAMPA[metrica][0] + "," + RAMPA[metrica][1] + ")";
+      $("matriz-min").textContent = "0";
+      $("matriz-max").textContent = resumo(max);
+    }
+  }
+  $("matriz-metrica").addEventListener("change", renderMatriz);
+  $("matriz-grid").addEventListener("click", function (e) {
+    var c = e.target.closest ? e.target.closest(".mx-c") : null;
+    if (!c) return;
+    selO.value = c.getAttribute("data-o");
+    opcoesDestino();
+    selD.value = c.getAttribute("data-d");
+    renderAll();
+  });
+
+  /* ---- funil origem → soja → destino (SVG) ---- */
+  function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+  function funilSVG(o, dd, nome) {
+    var ui = +selUF.value;
+    var rec;
+    if (ui < 0) { var r = agrega(o, dd); rec = { v: r.v, d: r.d, dv: r.dv, dd: r.dd }; }
+    else rec = ufPair(ui, o, dd);
+    var Vs = classesDe(rec.dv || []).filter(function (c) { return c.area > 0; });
+    var Ds = classesDe(rec.dd || []).filter(function (c) { return c.area > 0; });
+    if (!Vs.length || !Ds.length) {
+      return '<p class="hint" style="margin-top:10px">Funil disponível quando há área entrando <em>e</em> saindo de soja na janela.</p>';
+    }
+    function pack(lst) {
+      var t = lst.slice(0, 6);
+      var resto = lst.slice(6);
+      if (resto.length) t.push({ id: null, area: resto.reduce(function (a, c) { return a + c.area; }, 0) });
+      return t;
+    }
+    Vs = pack(Vs); Ds = pack(Ds);
+    var W = 640, BOXW = 150, CX = 255, CW = 70, HL = 190, GAPY = 2;
+    var tV = Vs.reduce(function (a, c) { return a + c.area; }, 0);
+    var tD = Ds.reduce(function (a, c) { return a + c.area; }, 0);
+    function bloco(lst, total, right, YTOP) {
+      var frags = "", y = YTOP, cum = 0;
+      lst.forEach(function (c) {
+        var h = Math.max(2, HL * c.area / total);
+        var cy = YTOP + (cum / total) * HL;
+        var rh = Math.max(1.5, HL * c.area / total);
+        var nm = c.id === null ? "Outras classes" : CLS[c.id];
+        var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
+        var bx = right ? W - BOXW : 0;
+        var tx = right ? bx - 6 : bx + BOXW + 6;
+        frags += '<rect x="' + bx + '" y="' + y + '" width="' + BOXW + '" height="' + h + '" rx="2" fill="' + cor + '"><title>' + nm + ' — ' + resumo(c.area) + ' (' + pct(c.area, total) + ')</title></rect>'
+          + '<text x="' + tx + '" y="' + (y + h / 2 + 3.5) + '" text-anchor="' + (right ? "end" : "start") + '" font-size="10.5" font-weight="600" fill="#33453d">' + trunc(nm, 24) + '</text>';
+        var xA = right ? bx - 10 : bx + BOXW + 10;
+        var xB = right ? CX + CW + 10 : CX - 10;
+        var p1 = right ? xB : xA, p2 = right ? xA : xB;
+        frags += '<path d="M' + p1 + ',' + cy + ' L' + p2 + ',' + cy + ' L' + p2 + ',' + (cy + rh) + ' L' + p1 + ',' + (cy + rh) + ' Z" fill="' + cor + '" opacity="0.32"><title>' + nm + ' — ' + resumo(c.area) + '</title></path>';
+        y += h + GAPY;
+        cum += c.area;
+      });
+      return frags;
+    }
+    var Y1T = 16, Y1 = 28;
+    var Y2T = Y1 + HL + 56, Y2 = Y2T + 12;
+    var H = Y2 + HL + 30;
+    return '<svg class="fsvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Funil de fluxos de uso da terra">'
+      + '<text x="' + (W / 2) + '" y="' + Y1T + '" text-anchor="middle" font-size="12" font-weight="800" fill="#18362d">Origem (' + o + ') → soja (' + dd + ') — ' + (ui < 0 ? "Brasil" : nome) + ' · ' + resumo(tV) + '</text>'
+      + '<rect x="' + CX + '" y="' + Y1 + '" width="' + CW + '" height="' + HL + '" rx="3" style="fill:var(--forest)"></rect>'
+      + bloco(Vs, tV, false, Y1)
+      + '<text x="' + (W / 2) + '" y="' + Y2T + '" text-anchor="middle" font-size="12" font-weight="800" fill="#18362d">Soja (' + o + ') → destino (' + dd + ') · ' + resumo(tD) + '</text>'
+      + '<rect x="' + CX + '" y="' + Y2 + '" width="' + CW + '" height="' + HL + '" rx="3" style="fill:var(--atencao)"></rect>'
+      + bloco(Ds, tD, true, Y2)
+      + '</svg>';
+  }
+
   /* ---- ficha: um estado (expandido) ---- */
   function renderFicha() {
     if (MODO === "comparar") { renderComparar(); return; }
@@ -483,7 +617,11 @@
       + coluna("Origem da soja nova", "Em que uso a terra estava antes de virar soja, em " + o + ".", rec.dv, "Nenhuma área virou soja nesta seleção na janela analisada.")
       + coluna("Destino da soja perdida", "Para qual uso a terra foi quando deixou de ser soja, em " + dd + ".", rec.dd, "Nenhuma área deixou de ser soja nesta seleção na janela analisada.")
       + '</div>'
-      + '<p class="hint" style="margin-top:16px">' + nome + " · " + o + " → " + dd + (ui < 0 && r ? " · " + r.n + " UFs com soja" : "") + '</p>';
+      + '<p class="hint" style="margin-top:16px">' + nome + " · " + o + " → " + dd + (ui < 0 && r ? " · " + r.n + " UFs com soja" : "") + '</p>'
+      + '<div class="funil-wrap"><h3>Fluxos da janela</h3>'
+      + '<p class="hint" style="margin-top:2px">Largura proporcional à área de cada classe. Passe o mouse nas caixas e fitas para ver os valores.</p>'
+      + funilSVG(o, dd, nome)
+      + '</div>';
     marcaSelecao();
   }
 
@@ -552,24 +690,54 @@
     });
     return cols;
   }
+  /* leitura de valores da evolução (painel sempre visível; hover atualiza) */
+  var S1 = null, IDXD = 0;
+  function roHtml(s) {
+    return '<span class="ano">' + s.ano + '</span>'
+      + '<span><span class="swmini" style="background:var(--forest)"></span>virou <span class="num" style="color:var(--ok)">' + resumo(s.v) + '</span></span>'
+      + '<span><span class="swmini" style="background:var(--atencao)"></span>deixou <span class="num" style="color:var(--atencao)">' + resumo(s.d) + '</span></span>'
+      + '<span><span class="swmini" style="background:var(--perm)"></span>permaneceu <span class="num">' + resumo(s.p) + '</span></span>';
+  }
+  function idxMaxV(serie) {
+    var m = 0;
+    serie.forEach(function (x, k) { if (x.v > serie[m].v) m = k; });
+    return m;
+  }
   function renderEvo() {
     var o = +selO.value;
     var ultimo = ANOS[ANOS.length - 1];
     if (MODO === "comparar") {
       $("evo-titulo").textContent = "Comparando trajetórias";
-      $("evo-sub").textContent = "Origem fixa em " + o + " · mini-múltiplos por estado";
+      $("evo-sub").textContent = "Origem fixa em " + o + " · mini-múltiplos por estado · passe o mouse para ler os valores";
+      S1 = null;
       var multi = $("evo-multi");
       if (!SELS.length) { multi.innerHTML = ""; $("evo-empty").hidden = false; $("evo-empty").textContent = "Selecione estados na seção “Um estado ou comparação” para ver suas trajetórias aqui."; return; }
+      var dados = [];
       var blocks = SELS.map(function (i) {
         var s = serieOrigem(i, o);
         var maxV = s.serie.reduce(function (a, x) { return Math.max(a, x.v); }, 0) || 1;
         var maxD = s.serie.reduce(function (a, x) { return Math.max(a, x.d); }, 0) || 1;
+        dados.push({ serie: s.serie, def: idxMaxV(s.serie) });
         return '<div class="mini-evo"><h4>' + UFS[i][1] + '</h4>'
           + '<div class="evo-cols">' + colunas(s.serie, maxV, maxD) + '</div>'
+          + '<div class="evo-readout num"></div>'
           + '<p class="hint" style="margin-top:4px">origem ' + o + (s.tem ? "" : " · sem soja registrada") + '</p></div>';
       }).join("");
       $("evo-empty").hidden = true;
       multi.innerHTML = blocks;
+      Array.prototype.forEach.call(multi.children, function (card, k) {
+        var dd = dados[k];
+        var ro = card.querySelector(".evo-readout");
+        var cols = card.querySelector(".evo-cols");
+        ro.innerHTML = roHtml(dd.serie[dd.def]);
+        card.addEventListener("mousemove", function (e) {
+          var col = e.target.closest(".evo-col");
+          if (!col) return;
+          var i = Array.prototype.indexOf.call(cols.children, col);
+          if (dd.serie[i]) ro.innerHTML = roHtml(dd.serie[i]);
+        });
+        card.addEventListener("mouseleave", function () { ro.innerHTML = roHtml(dd.serie[dd.def]); });
+      });
       return;
     }
     var ui = +selUF.value;
@@ -578,6 +746,7 @@
     $("evo-sub").textContent = "Origem fixa em " + o + " · destino em cada ano seguinte · " + nome;
     $("evo-titulo").textContent = nome + " · trajetórias da soja de " + o;
     if (!s.tem) {
+      S1 = null;
       $("evo-single").hidden = true;
       $("evo-empty").hidden = false;
       $("evo-cols").innerHTML = ""; $("evo-axis").innerHTML = ""; $("evo-cols-p").innerHTML = "";
@@ -588,6 +757,11 @@
     var maxV = s.serie.reduce(function (a, x) { return Math.max(a, x.v); }, 0) || 1;
     var maxD = s.serie.reduce(function (a, x) { return Math.max(a, x.d); }, 0) || 1;
     var maxP = s.serie.reduce(function (a, x) { return Math.max(a, x.p); }, 0) || 1;
+    $("evo-scale").textContent = "Escalas — virou até " + resumo(maxV) + " · deixou até " + resumo(maxD)
+      + " · permaneceu até " + resumo(maxP) + " (cada cor na própria escala).";
+    S1 = s.serie;
+    IDXD = idxMaxV(s.serie);
+    $("evo-readout").innerHTML = roHtml(S1[IDXD]);
     $("evo-cols").innerHTML = colunas(s.serie, maxV, maxD, false);
     var axis = "";
     s.serie.forEach(function (x) {
@@ -604,6 +778,17 @@
   }
 
   /* ---- ligações ---- */
+  /* leitura de valores da evolução: hover nas colunas atualiza o painel */
+  $("evo-single").addEventListener("mousemove", function (e) {
+    var col = e.target.closest && e.target.closest(".evo-col");
+    if (!col || !S1) return;
+    var i = Array.prototype.indexOf.call(col.parentNode.children, col);
+    if (S1[i]) $("evo-readout").innerHTML = roHtml(S1[i]);
+  });
+  $("evo-single").addEventListener("mouseleave", function () {
+    if (S1) $("evo-readout").innerHTML = roHtml(S1[IDXD]);
+  });
+
   function renderAll() {
     var r = renderResumo();
     renderRanking(r);
@@ -611,13 +796,14 @@
     renderComp(r.v, r.dv, "comp-bar", "comp-legend");
     renderComp(r.d, r.dd, "comp-bar-d", "comp-legend-d");
     renderMapa();
+    renderMatriz();
     renderFicha();
     renderEvo();
   }
 
   selO.addEventListener("change", function () { opcoesDestino(); renderAll(); });
   selD.addEventListener("change", renderAll);
-  selUF.addEventListener("change", function () { renderFicha(); renderEvo(); });
+  selUF.addEventListener("change", function () { renderFicha(); renderEvo(); renderMatriz(); });
 
   $("cob-zero").textContent = SEM_DADOS.join(" · ") || "—";
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";
