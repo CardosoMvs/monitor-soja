@@ -522,7 +522,7 @@
     renderAll();
   });
 
-  /* ---- funil origem → soja → destino (SVG) ---- */
+  /* ---- funil origem → soja → destino (SVG sankey) ---- */
   function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
   function funilSVG(o, dd, nome) {
     var ui = +selUF.value;
@@ -532,49 +532,72 @@
     var Vs = classesDe(rec.dv || []).filter(function (c) { return c.area > 0; });
     var Ds = classesDe(rec.dd || []).filter(function (c) { return c.area > 0; });
     if (!Vs.length || !Ds.length) {
-      return '<p class="hint" style="margin-top:10px">Funil disponível quando há área entrando <em>e</em> saindo de soja na janela.</p>';
+      return '<p class="hint" style="margin-top:10px">Funil disponível quando há área entrando <em>e</em> saindo de soja nesta janela — ajuste os anos de início e fim no console para ver outro trecho da série.</p>';
     }
     function pack(lst) {
-      var t = lst.slice(0, 6);
-      var resto = lst.slice(6);
+      var t = lst.slice(0, 7);
+      var resto = lst.slice(7);
       if (resto.length) t.push({ id: null, area: resto.reduce(function (a, c) { return a + c.area; }, 0) });
       return t;
     }
     Vs = pack(Vs); Ds = pack(Ds);
-    var W = 640, BOXW = 150, CX = 255, CW = 70, HL = 190, GAPY = 2;
+    var W = 980, GL = 176, BOXW = 200, CXL = 430, CW = 120, HL = 235;
     var tV = Vs.reduce(function (a, c) { return a + c.area; }, 0);
     var tD = Ds.reduce(function (a, c) { return a + c.area; }, 0);
-    function bloco(lst, total, right, YTOP) {
+
+    function fitas(lst, total, YTOP, right) {
+      // fitas diagonais da coluna de classes até o nó central (desenhadas primeiro)
       var frags = "", y = YTOP, cum = 0;
+      var xCaixa = right ? W - GL - BOXW : GL + BOXW;
+      var xCentro = right ? CXL + CW : CXL;
       lst.forEach(function (c) {
-        var h = Math.max(2, HL * c.area / total);
+        var h = HL * c.area / total;
         var cy = YTOP + (cum / total) * HL;
-        var rh = Math.max(1.5, HL * c.area / total);
+        var rh = Math.max(1.2, HL * c.area / total);
         var nm = c.id === null ? "Outras classes" : CLS[c.id];
         var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
-        var bx = right ? W - BOXW : 0;
-        var tx = right ? bx - 6 : bx + BOXW + 6;
-        frags += '<rect x="' + bx + '" y="' + y + '" width="' + BOXW + '" height="' + h + '" rx="2" fill="' + cor + '"><title>' + nm + ' — ' + resumo(c.area) + ' (' + pct(c.area, total) + ')</title></rect>'
-          + '<text x="' + tx + '" y="' + (y + h / 2 + 3.5) + '" text-anchor="' + (right ? "end" : "start") + '" font-size="10.5" font-weight="600" fill="#33453d">' + trunc(nm, 24) + '</text>';
-        var xA = right ? bx - 10 : bx + BOXW + 10;
-        var xB = right ? CX + CW + 10 : CX - 10;
-        var p1 = right ? xB : xA, p2 = right ? xA : xB;
-        frags += '<path d="M' + p1 + ',' + cy + ' L' + p2 + ',' + cy + ' L' + p2 + ',' + (cy + rh) + ' L' + p1 + ',' + (cy + rh) + ' Z" fill="' + cor + '" opacity="0.32"><title>' + nm + ' — ' + resumo(c.area) + '</title></path>';
-        y += h + GAPY;
+        frags += '<path class="fita" d="M' + xCaixa + ',' + y + ' L' + xCentro + ',' + cy
+          + ' L' + xCentro + ',' + (cy + rh) + ' L' + xCaixa + ',' + (y + h) + ' Z" fill="' + cor
+          + '" opacity="0.38"><title>' + nm + ' — ' + resumo(c.area) + ' (' + pct(c.area, total) + ')</title></path>';
+        y += h;
         cum += c.area;
       });
       return frags;
     }
-    var Y1T = 16, Y1 = 28;
-    var Y2T = Y1 + HL + 56, Y2 = Y2T + 12;
-    var H = Y2 + HL + 30;
-    return '<svg class="fsvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Funil de fluxos de uso da terra">'
-      + '<text x="' + (W / 2) + '" y="' + Y1T + '" text-anchor="middle" font-size="12" font-weight="800" fill="#18362d">Origem (' + o + ') → soja (' + dd + ') — ' + (ui < 0 ? "Brasil" : nome) + ' · ' + resumo(tV) + '</text>'
-      + '<rect x="' + CX + '" y="' + Y1 + '" width="' + CW + '" height="' + HL + '" rx="3" style="fill:var(--forest)"></rect>'
-      + bloco(Vs, tV, false, Y1)
-      + '<text x="' + (W / 2) + '" y="' + Y2T + '" text-anchor="middle" font-size="12" font-weight="800" fill="#18362d">Soja (' + o + ') → destino (' + dd + ') · ' + resumo(tD) + '</text>'
-      + '<rect x="' + CX + '" y="' + Y2 + '" width="' + CW + '" height="' + HL + '" rx="3" style="fill:var(--atencao)"></rect>'
-      + bloco(Ds, tD, true, Y2)
+    function caixas(lst, total, YTOP, right) {
+      // coluna de classes flush (sem buracos) + rótulos externos com valor e %
+      var frags = "", y = YTOP;
+      var bx = right ? W - GL - BOXW : GL;
+      var tx = right ? bx + BOXW + 14 : 6;
+      lst.forEach(function (c) {
+        var h = HL * c.area / total;
+        var nm = c.id === null ? "Outras classes" : CLS[c.id];
+        var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
+        frags += '<rect x="' + bx + '" y="' + y + '" width="' + BOXW + '" height="' + h + '" fill="' + cor + '"><title>' + nm + ' — ' + resumo(c.area) + ' (' + pct(c.area, total) + ')</title></rect>';
+        if (h >= 14) {
+          frags += '<text x="' + tx + '" y="' + (y + h / 2 - 2) + '" font-size="12.5" font-weight="700" fill="#18362d">' + trunc(nm, 21) + '</text>'
+            + '<text x="' + tx + '" y="' + (y + h / 2 + 12) + '" font-size="11.5" font-weight="600" fill="#5f7169">' + resumo(c.area) + ' · ' + pct(c.area, total) + '</text>';
+        }
+        y += h;
+      });
+      return frags;
+    }
+    var Y1T = 20, Y1 = 30, Y2T = Y1 + HL + 42, Y2 = Y2T + 10, H = Y2 + HL + 26;
+    var xm = CXL + CW / 2;
+    return '<svg class="fsvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Fluxos de uso da terra entre '
+      + o + ' e ' + dd + ' (sankey)">'
+      + '<text x="' + (W / 2) + '" y="' + Y1T + '" text-anchor="middle" font-size="14" font-weight="800" fill="#18362d">De onde veio a soja nova — ' + nome + ' · ' + o + ' → ' + dd + '</text>'
+      + fitas(Vs, tV, Y1, false)
+      + caixas(Vs, tV, Y1, false)
+      + '<rect x="' + CXL + '" y="' + Y1 + '" width="' + CW + '" height="' + HL + '" rx="5" style="fill:var(--forest)"><title>Soja nova total — ' + resumo(tV) + '</title></rect>'
+      + '<text x="' + xm + '" y="' + (Y1 + HL / 2 - 2) + '" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">VIRAM SOJA</text>'
+      + '<text x="' + xm + '" y="' + (Y1 + HL / 2 + 16) + '" text-anchor="middle" font-size="13.5" font-weight="800" fill="#dce89b">' + resumo(tV) + '</text>'
+      + '<text x="' + (W / 2) + '" y="' + Y2T + '" text-anchor="middle" font-size="14" font-weight="800" fill="#18362d">Para onde foi a soja que saiu — ' + o + ' → ' + dd + '</text>'
+      + fitas(Ds, tD, Y2, true)
+      + caixas(Ds, tD, Y2, true)
+      + '<rect x="' + CXL + '" y="' + Y2 + '" width="' + CW + '" height="' + HL + '" rx="5" style="fill:var(--atencao)"><title>Soja perdida total — ' + resumo(tD) + '</title></rect>'
+      + '<text x="' + xm + '" y="' + (Y2 + HL / 2 - 2) + '" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">SAIU DE SOJA</text>'
+      + '<text x="' + xm + '" y="' + (Y2 + HL / 2 + 16) + '" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff">' + resumo(tD) + '</text>'
       + '</svg>';
   }
 
