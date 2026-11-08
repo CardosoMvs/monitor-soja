@@ -151,6 +151,15 @@ dados = {
     "t": por_uf,
 }
 
+# geometria SVG das UFs (embutida no data.js; @svg-maps/brazil, CC0)
+MAPA_SRC = os.path.join(BASE, "tools", "brazil-map.json")
+if os.path.exists(MAPA_SRC):
+    with open(MAPA_SRC, encoding="utf-8") as f:
+        dados["mapa"] = json.load(f)
+else:
+    print("!! tools/brazil-map.json não encontrado — data.js sai sem o mapa")
+    dados["mapa"] = None
+
 os.makedirs(OUT_DIR, exist_ok=True)
 out_path = os.path.join(OUT_DIR, "data.js")
 with open(out_path, "w", encoding="utf-8") as f:
