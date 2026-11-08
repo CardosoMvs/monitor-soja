@@ -28,6 +28,11 @@
     var c1 = hex2rgb(a), c2 = hex2rgb(b);
     return "rgb(" + Math.round(c1[0] + (c2[0] - c1[0]) * t) + "," + Math.round(c1[1] + (c2[1] - c1[1]) * t) + "," + Math.round(c1[2] + (c2[2] - c1[2]) * t) + ")";
   }
+  function mixHex(a, b, t) {
+    var c1 = hex2rgb(a), c2 = hex2rgb(b);
+    function hx(x) { var s = Math.round(Math.max(0, Math.min(255, x))).toString(16); return s.length < 2 ? "0" + s : s; }
+    return "#" + hx(c1[0] + (c2[0] - c1[0]) * t) + hx(c1[1] + (c2[1] - c1[1]) * t) + hx(c1[2] + (c2[2] - c1[2]) * t);
+  }
   var RAMPA = { virou: ["#edf1e6", "#184b39"], deixou: ["#f2e9db", "#8a4a12"], perm: ["#edf1eb", "#414f47"], sojad: ["#e8efeb", "#0e6a56"] };
   var SALDO_POS = "#2e7d5b", SALDO_NEG = "#b06010", SALDO_MEIO = "#eff1ea", SALDO_NEG_CLARO = "#f2ece2";
 
@@ -352,6 +357,7 @@
   }
   var tip = $("mapa-tip");
 
+  function gK(metrica) { return metrica.charAt(1); }
   function valoresMapa(o, dd, metrica) {
     return UFS.map(function (u, i) {
       var r = ufPair(i, o, dd);
@@ -359,6 +365,11 @@
       if (metrica === "deixou") return r.d;
       if (metrica === "perm") return r.p;
       if (metrica === "sojad") return r.v + r.p;
+      if (metrica.charAt(0) === "g" && metrica.length === 2) {
+        var s = 0, ids = GRUPOS[+metrica.charAt(1)].ids;
+        (r.dv || []).forEach(function (c) { if (ids[c[0]]) s += c[1]; });
+        return s;
+      }
       return r.v - r.d;
     });
   }
@@ -371,11 +382,13 @@
     var max = vals.reduce(function (a, v) { return Math.max(a, Math.abs(v)); }, 0) || 0;
     var min = metrica === "saldo" ? Math.min.apply(null, vals) : 0;
     var maxPos = Math.max.apply(null, vals);
-    $("mapa-desc").textContent = "Cada UF pintada pela " + ({
+    var dmap = {
       virou: "área que virou soja", deixou: "área que deixou de ser soja",
       saldo: "área líquida (virou − deixou)", perm: "área que permaneceu soja",
       sojad: "área total de soja no ano final"
-    })[metrica] + " entre " + o + " e " + dd + ".";
+    };
+    if (metrica.charAt(0) === "g") dmap[metrica] = "área vinda de " + GRUPOS[+gK(metrica)].tit;
+    $("mapa-desc").textContent = "Cada UF pintada pela " + dmap[metrica] + " entre " + o + " e " + dd + ".";
     if (max <= 0) {
       SVG.querySelectorAll("path").forEach(function (p) { p.setAttribute("fill", "#edf1eb"); });
       $("mapa-grad").style.background = "#edf1eb";
@@ -388,7 +401,7 @@
         var cor;
         if (metrica === "saldo") cor = corSaldo(v, max);
         else {
-          var r = RAMPA[metrica];
+          var r = metrica.charAt(0) === "g" ? GRUPOS[+gK(metrica)].rampa : RAMPA[metrica];
           cor = mix(r[0], r[1], Math.pow(Math.max(v, 0) / max, 0.45));
         }
         p.setAttribute("fill", cor);
@@ -399,7 +412,8 @@
         $("mapa-min").textContent = "−" + resumo(Math.abs(min)).replace("−", "");
         $("mapa-max").textContent = "+" + resumo(maxPos).replace("+", "");
       } else {
-        grad = "linear-gradient(90deg," + RAMPA[metrica][0] + "," + RAMPA[metrica][1] + ")";
+        var rg = metrica.charAt(0) === "g" ? GRUPOS[+gK(metrica)].rampa : RAMPA[metrica];
+        grad = "linear-gradient(90deg," + rg[0] + "," + rg[1] + ")";
         $("mapa-min").textContent = "0";
         $("mapa-max").textContent = resumo(max);
       }
@@ -476,7 +490,7 @@
   ];
   var GRUPOS = BASE6.map(function (g) {
     return { tit: g.tit, cor: g.cor, ids: g.ids ? idsSet(g.ids) : null,
-             rampa: [mix("#fafbf9", g.cor, 0.16), g.cor] };
+             rampa: [mixHex("#fafbf9", g.cor, 0.16), g.cor] };
   });
   var GSvg = {};
   function buildGroupSvgs() {
@@ -602,7 +616,7 @@
   }
   function corMetrica(metrica, v, max) {
     if (metrica === "saldo") return corSaldo(v, max);
-    var r = RAMPA[metrica];
+    var r = metrica.charAt(0) === "g" ? GRUPOS[+gK(metrica)].rampa : RAMPA[metrica];
     return mix(r[0], r[1], Math.pow(Math.max(v, 0) / max, 0.45));
   }
   function renderMatriz() {
@@ -619,6 +633,14 @@
       if (metrica === "deixou") return m.d;
       if (metrica === "perm") return m.p;
       if (metrica === "sojad") return m.v + m.p;
+      if (metrica.charAt(0) === "g" && metrica.length === 2) {
+        var ids = GRUPOS[+gK(metrica)].ids;
+        if (!m.dv) return 0;
+        if (m.dv.forEach) {
+          return m.dv.reduce(function (a, c) { return a + (ids[c[0]] ? c[1] : 0); }, 0);
+        }
+        return Object.keys(m.dv).reduce(function (a, k) { return a + (ids[+k] ? m.dv[k] : 0); }, 0);
+      }
       return m.v - m.d;
     }
     var max = 0, minS = 0, maxPos = 0;
@@ -656,7 +678,8 @@
       $("matriz-min").textContent = "−" + resumo(Math.abs(minS));
       $("matriz-max").textContent = "+" + resumo(maxPos);
     } else {
-      $("matriz-grad").style.background = "linear-gradient(90deg," + RAMPA[metrica][0] + "," + RAMPA[metrica][1] + ")";
+      var rgm = metrica.charAt(0) === "g" ? GRUPOS[+gK(metrica)].rampa : RAMPA[metrica];
+      $("matriz-grad").style.background = "linear-gradient(90deg," + rgm[0] + "," + rgm[1] + ")";
       $("matriz-min").textContent = "0";
       $("matriz-max").textContent = resumo(max);
     }
