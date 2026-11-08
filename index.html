@@ -222,7 +222,10 @@ a { color: var(--forest); }
 .bars .bar.perm { background: var(--perm); height: 6px; }
 .bar-track { display: flex; align-items: center; gap: 7px; }
 .bar-val { font-size: 0.68rem; font-weight: 700; color: var(--muted); white-space: nowrap; min-width: 52px; }
-.evo-scale { margin-top: 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.bar-stack { display: flex; height: 20px; border-radius: 3px; overflow: hidden; min-width: 2px; }
+.bar-stack .seg { min-width: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+.seg-rot { font-size: 0.64rem; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; }
+.bar-zero-fill { background: var(--vazio); height: 6px; width: 100%; opacity: 0.35; border-radius: 3px; }
 .evo-readout {
   margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center;
   font-size: 0.8rem; font-weight: 600; color: var(--muted);
@@ -233,7 +236,7 @@ a { color: var(--forest); }
 .evo-col:hover .evo-zone i { filter: brightness(1.18); }
 .mini-evo .evo-readout { margin-top: 8px; font-size: 0.72rem; min-height: 30px; }
 .mini-evo .evo-readout .ano { font-size: 0.8rem; }
-.bar-zero-fill { background: var(--vazio); height: 6px; width: 100%; opacity: 0.35; border-radius: 3px; }
+.evo-scale { margin-top: 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
 .rank-empty { margin-top: 16px; padding: 20px 6px; color: var(--muted); font-size: 0.92rem; }
 
 /* --- composição --- */
@@ -550,21 +553,15 @@ a { color: var(--forest); }
   <div class="wrap band-inner">
     <div class="section-eyebrow">Onde a soja avançou</div>
     <h2 class="section-title">Ranking estadual da expansão</h2>
-    <p class="section-desc" id="rank-desc">Área que virou soja (verde) e a que deixou de ser soja (âmbar) entre os anos da janela selecionada, por unidade federativa, em hectares — na mesma escala.</p>
+    <p class="section-desc" id="rank-desc">Barra única empilhada por UF — o que virou soja (verde), o que deixou de ser soja (âmbar) e o que permaneceu soja (cinza) — em hectares, numa única escala compartilhada entre os estados para preservar as proporções reais.</p>
     <div class="rank-legend">
       <span class="key"><span class="sw sw-virou"></span> Virou soja</span>
       <span class="key"><span class="sw sw-deixou"></span> Deixou de ser soja</span>
+      <span class="key"><span class="sw sw-perm"></span> Permaneceu soja</span>
     </div>
     <p class="hint" id="rank-scale" style="margin-top:2px"></p>
     <div class="rank-list" id="rank-list"></div>
     <div class="rank-empty" id="rank-empty" hidden>Nenhuma transição registrada no Brasil nesta janela.</div>
-
-    <div class="comp-wrap">
-      <h3>O que era soja e continuou soja</h3>
-      <p class="hint" id="perm-hint">Área que permaneceu soja entre os dois anos da janela (sobreposição de soja na origem e no destino) — escala própria, ordenada por tamanho.</p>
-      <div class="rank-list" id="rank-perm-list" style="margin-top:10px"></div>
-      <div class="rank-empty" id="rank-perm-empty" hidden>Nenhuma área de soja registrada nos dois anos desta janela.</div>
-    </div>
 
     <div class="comp-wrap">
       <div class="comp-item2">
@@ -966,7 +963,7 @@ a { color: var(--forest); }
     $("st-perm").textContent = resumo(r.p);
     $("st-saldo").textContent = resumo(r.v - r.d);
     $("st-ufs").textContent = r.n + " de 27";
-    $("rank-desc").textContent = "Área que virou soja (verde) e a que deixou de ser soja (âmbar) entre " + o + " e " + dd + ", por unidade federativa, em hectares — na mesma escala.";
+    $("rank-desc").textContent = "Barra única empilhada por UF — virou (verde), deixou de ser (âmbar) e permaneceu (cinza) entre " + o + " e " + dd + ", em hectares, numa única escala para preservar as proporções reais.";
     $("comp-v-hint").textContent = "Composição das áreas que viraram soja (" + resumo(r.v) + ") pelas classes de uso no ano de origem (" + o + ").";
     $("comp-d-hint").textContent = "Composição das áreas que deixaram de ser soja (" + resumo(r.d) + ") pelas classes de uso no ano de destino (" + dd + ").";
     return r;
@@ -978,52 +975,38 @@ a { color: var(--forest); }
       var rec = ufPair(i, o, dd);
       return { label: u[1], v: rec.v, d: rec.d, p: rec.p };
     });
+    lista.forEach(function (e) { e.t = e.v + e.d + e.p; });
     lista.sort(function (a, b) { return (b.v - a.v) || (b.d - a.d); });
-    var comTransicao = lista.filter(function (e) { return e.v > 0 || e.d > 0; });
-    var maxV = lista.reduce(function (a, e) { return Math.max(a, e.v); }, 0) || 1;
-    var maxD = lista.reduce(function (a, e) { return Math.max(a, e.d); }, 0) || 1;
-    if (!comTransicao.length) {
+    var comArea = lista.filter(function (e) { return e.t > 0; });
+    var maxT = lista.reduce(function (a, e) { return Math.max(a, e.t); }, 0) || 1;
+    if (!comArea.length) {
       $("rank-list").innerHTML = "";
       $("rank-empty").hidden = false;
-      $("rank-empty").textContent = r.p > 0
-        ? "Nesta janela a soja só permaneceu — nenhuma área virou ou deixou de ser soja (veja o quadro de permanência abaixo)."
-        : "Nenhuma área da classe Soja registrada nesta janela — a classe não estava presente nos anos selecionados.";
+      $("rank-empty").textContent = "Nenhuma área da classe Soja registrada nesta janela — a classe não estava presente nos anos selecionados.";
       $("rank-scale").textContent = "";
-    } else {
-      $("rank-empty").hidden = true;
-      $("rank-scale").textContent = "Uma escala só para virou (verde) e deixou (âmbar): a maior UF da janela vale " + resumo(Math.max(maxV, maxD)) + " — o valor de cada barra aparece ao lado dela.";
+      return;
     }
+    $("rank-empty").hidden = true;
+    $("rank-scale").textContent = "Uma barra empilhada por UF, numa única escala (maior UF da janela: " + resumo(maxT) + "): o que virou (verde), o que deixou de ser (âmbar) e o que permaneceu (cinza) têm entre si e entre estados a proporção real. Valores dentro da barra quando cabem; saldo no lado direito.";
     var html = "", ordem = 0;
-    comTransicao.forEach(function (e) {
+    comArea.forEach(function (e) {
       ordem++;
-      var linhas = "";
-      linhas += e.v > 0
-        ? '<div class="bar-track"><div class="bar" style="width:' + Math.max(1.5, 100 * e.v / maxV).toFixed(1) + '%"></div><span class="bar-val num">' + resumo(e.v) + '</span></div>'
-        : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
-      linhas += e.d > 0
-        ? '<div class="bar-track"><div class="bar deixou" style="width:' + Math.max(1.5, 100 * e.d / maxD).toFixed(1) + '%"></div><span class="bar-val num">−' + resumo(e.d) + '</span></div>'
-        : '<div class="bar-track"><div class="bar-zero-fill" style="flex:1;width:auto"></div><span class="bar-val num">0 ha</span></div>';
+      var largura = 100 * e.t / maxT;
+      function seg(cls, area) {
+        if (area <= 0) return "";
+        var frac = area / e.t;
+        var rot = frac >= 0.12 ? '<span class="seg-rot num">' + resumo(area) + '</span>' : "";
+        return '<span class="seg ' + cls + '" style="flex:' + area + '" title="' + pct(area, e.t) + '">' + rot + '</span>';
+      }
       html += '<div class="rank-row"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
         + '<span class="val num">saldo ' + resumo(e.v - e.d) + '</span></div>'
-        + '<div class="bars">' + linhas + '</div></div>';
+        + '<div class="bar-track"><div class="bar-stack" style="width:' + largura.toFixed(1) + '%">'
+        + seg("seg-se", e.v) + seg("seg-sd", e.d) + seg("seg-sp", e.p)
+        + '</div></div></div>';
     });
     $("rank-list").innerHTML = html;
-
-    /* ranking da permanência — escala própria, ordenado por permaneceu */
-    var perms = lista.filter(function (e) { return e.p > 0; })
-      .sort(function (a, b) { return b.p - a.p; });
-    $("rank-perm-empty").hidden = perms.length > 0;
-    var pm = perms.length ? perms[0].p : 1;
-    $("rank-perm-list").innerHTML = perms.map(function (e, k) {
-      return '<div class="rank-row"><div class="rank-head">'
-        + '<span class="pos num">' + String(k + 1).padStart(2, "0") + '</span>'
-        + '<span class="uf">' + e.label + '</span>'
-        + '<span class="val num">' + resumo(e.p) + ' <small>· ' + pct(e.p, e.v + e.d + e.p) + ' da área da UF na janela</small></span></div>'
-        + '<div class="bars"><div class="bar-track"><div class="bar perm" style="width:' + Math.max(1.5, 100 * e.p / pm).toFixed(1) + '%"></div><span class="bar-val num">' + resumo(e.p) + '</span></div></div>'
-        + '</div>';
-    }).join("");
   }
 
   function renderEstrutura(r) {
