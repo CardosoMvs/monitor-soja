@@ -142,6 +142,29 @@ a { color: var(--forest); }
 .hero-badge small { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 @media (max-width: 720px) { .hero-badge { position: static; margin-top: 24px; max-width: 100%; text-align: left; } }
 
+/* --- aviso inicial do console --- */
+.aviso {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  z-index: 40; display: flex; align-items: flex-start; gap: 12px;
+  max-width: min(660px, calc(100vw - 28px));
+  background: var(--forest-dark); color: #fff; padding: 13px 15px 13px 14px;
+  border-radius: 10px; box-shadow: var(--shadow-md);
+  animation: avisoSubir 0.45s cubic-bezier(.22, .61, .36, 1);
+}
+.aviso[hidden] { display: none; }
+@keyframes avisoSubir { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .aviso { animation: none; } }
+.aviso-ball { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-highlight); flex: none; margin-top: 6px; }
+.aviso-txt { margin: 0; font-size: 0.85rem; line-height: 1.55; color: #fff; }
+.aviso-txt strong { color: var(--accent-highlight); }
+.aviso-soft { display: block; font-size: 0.72rem; color: #9db8aa; margin-top: 2px; }
+#aviso-fechar {
+  border: 0; background: rgba(220, 232, 155, 0.14); color: #fff; font-size: 1rem; line-height: 1;
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer; flex: none;
+  display: grid; place-items: center; font-weight: 700;
+}
+#aviso-fechar:hover { background: rgba(220, 232, 155, 0.28); }
+
 /* --- directory --- */
 .directory { border-bottom: 1px solid var(--line); background: var(--surface); }
 .directory .band-inner { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
@@ -188,6 +211,7 @@ a { color: var(--forest); }
   display: grid; grid-template-columns: 1fr; gap: 20px;
 }
 @media (min-width: 780px) { .dataset-card { grid-template-columns: 1fr 2fr; } }
+.dataset-card[hidden] { display: none; }
 .dataset-card h3 { font-size: 1.05rem; }
 .dataset-card .sub { color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
 .ds-tag {
@@ -228,7 +252,7 @@ a { color: var(--forest); }
 .bar-stack .seg { min-width: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
 .seg-rot { font-size: 0.64rem; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; }
 .bar-zero-fill { background: var(--vazio); height: 6px; width: 100%; opacity: 0.35; border-radius: 3px; }
-.evo-readout {
+.evo-readout { overflow-wrap: anywhere;
   margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center;
   font-size: 0.8rem; font-weight: 600; color: var(--muted);
   background: var(--surface-soft); border-radius: 4px; padding: 8px 12px; min-height: 36px;
@@ -236,7 +260,7 @@ a { color: var(--forest); }
 .evo-readout .ano { font-weight: 800; color: var(--ink); font-size: 0.88rem; }
 .evo-readout .swmini { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: baseline; }
 .evo-col:hover .evo-zone i { filter: brightness(1.18); }
-.mini-evo .evo-readout { margin-top: 8px; font-size: 0.72rem; min-height: 30px; }
+.mini-evo .evo-readout { overflow-wrap: anywhere; margin-top: 8px; font-size: 0.72rem; min-height: 30px; }
 .mini-evo .evo-readout .ano { font-size: 0.8rem; }
 .evo-scale { margin-top: 10px; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
 .rank-row.hl { border-color: var(--forest); background: #f3f7ef; box-shadow: inset 3px 0 0 var(--forest); margin-top: 10px; }
@@ -308,7 +332,7 @@ a { color: var(--forest); }
 
 /* --- mini-mapas dos grupos --- */
 .grupos-grid { display: grid; gap: 14px; margin-top: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.mini-map { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px 16px 10px; }
+.mini-map { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px 16px 10px; overflow-wrap: anywhere; min-width: 0; }
 .mini-map h4 { font-size: 0.92rem; line-height: 1.3; }
 .mini-map .mm-plot { position: relative; margin-top: 8px; }
 .mini-map .bmap svg { width: 100%; height: auto; display: block; }
@@ -352,7 +376,8 @@ a { color: var(--forest); }
 .evo-cols--perm { height: 64px; margin-top: 10px; }
 .evo-axis { display: flex; gap: 2px; margin-top: 6px; }
 .evo-axis span { flex: 1 0 14px; min-width: 14px; font-size: 0.62rem; font-weight: 600; color: var(--muted); text-align: center; }
-.evo-perm-hint { margin-top: 4px; }
+.evo-perm-hint { margin-top: 10px; }
+.evo-line-wrap { margin-top: 4px; }
 .evo-empty { margin-top: 12px; color: var(--muted); font-size: 0.88rem; padding: 16px 4px; }
 .evo-multi { display: grid; gap: 16px; margin-top: 18px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
 .mini-evo { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 12px 8px; background: var(--surface); }
@@ -403,8 +428,8 @@ a { color: var(--forest); }
 .state-empty { padding: 30px 6px; color: var(--muted); font-size: 0.92rem; }
 
 /* --- comparação de estados --- */
-.cmp-grid { display: grid; gap: 14px; margin-top: 16px; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
-.cmp-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; }
+.cmp-grid { display: grid; gap: 14px; margin-top: 16px; grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr)); }
+.cmp-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; overflow-wrap: anywhere; min-width: 0; }
 .cmp-head { display: flex; align-items: baseline; gap: 10px; }
 .cmp-head h4 { font-size: 0.98rem; }
 .cmp-head .saldo { margin-left: auto; font-weight: 800; font-size: 0.88rem; white-space: nowrap; }
@@ -413,8 +438,8 @@ a { color: var(--forest); }
 .seg-se { background: var(--forest); }
 .seg-sd { background: var(--atencao); }
 .seg-sp { background: var(--perm); }
-.cmp-vals { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 9px; font-size: 0.78rem; color: var(--muted); font-weight: 600; }
-.cmp-vals .key { display: inline-flex; align-items: center; gap: 6px; }
+.cmp-vals { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 9px; font-size: 0.78rem; color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+.cmp-vals .key { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
 .cmp-vals .sw { width: 9px; height: 9px; border-radius: 2px; }
 .cmp-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; margin-top: 12px; }
 .cmp-cols .col-tit { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 4px; }
@@ -432,13 +457,17 @@ a { color: var(--forest); }
 }
 @media (max-width: 900px) { .mx-wrap { grid-template-columns: 1fr; } }
 .mx-scroll { overflow-x: auto; padding-bottom: 6px; }
-#matriz-grid { display: grid; grid-template-columns: minmax(46px, auto) repeat(40, minmax(17px, 1fr)); gap: 1px; min-width: 880px; }
-.mx-lbl { font-size: 0.62rem; font-weight: 700; color: var(--muted); text-align: right; padding-right: 5px; line-height: 17px; }
-.mx-h { font-size: 0.55rem; font-weight: 700; color: var(--muted); text-align: center; padding-top: 2px; height: 34px; overflow: hidden; }
+#matriz-grid { display: grid; grid-template-columns: minmax(52px, auto) repeat(40, minmax(20px, 1fr)); gap: 1px; min-width: 1020px; }
+.mx-hi { background: #dfe9db !important; color: var(--forest) !important; }
+.mx-lbl { font-size: 0.66rem; font-weight: 700; color: var(--muted); text-align: right; padding-right: 6px; line-height: 20px; }
+.mx-vi { outline: 2px solid var(--ink); outline-offset: -2px; }
+.mx-h { font-size: 0.6rem; font-weight: 700; color: var(--muted); text-align: center; padding-top: 2px; height: 40px; }
+.mx-h, .mx-lbl { transition: background 0.12s; }
 .mx-h span { writing-mode: vertical-rl; display: inline-block; line-height: 1; }
-.mx-c { aspect-ratio: 1; border-radius: 2px; cursor: pointer; min-height: 17px; }
+.mx-c { aspect-ratio: 1; border-radius: 2px; cursor: pointer; min-height: 20px; }
+.mx-c:hover { outline: 2px solid var(--ink); outline-offset: -2px; position: relative; z-index: 2; }
 .mx-c:hover { outline: 2px solid var(--ink); outline-offset: -2px; }
-.mx-e { aspect-ratio: 1; border-radius: 2px; min-height: 17px; background: #f2f4ef; }
+.mx-e { aspect-ratio: 1; border-radius: 2px; min-height: 20px; background: #f2f4ef; }
 .mx-side .lbl2 {
   display: block; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px;
@@ -462,7 +491,7 @@ a { color: var(--forest); }
 .estado-card {
   margin-top: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: var(--shadow-sm); padding: 18px 22px 20px;
-  display: grid; grid-template-columns: 2fr 1.15fr; gap: 22px;
+  display: grid; grid-template-columns: 1.15fr 2fr; gap: 22px;
 }
 .estado-card[hidden] { display: none; }
 .estado-card .lbl2 {
@@ -475,7 +504,15 @@ a { color: var(--forest); }
 @media (max-width: 760px) { .estado-card { grid-template-columns: 1fr; } }
 
 /* --- metodologia / footer --- */
-.met-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; margin-top: 26px; }
+.met-card { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; margin-top: 26px; }
+.met-card summary {
+  cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 10px;
+  font-size: 1.05rem; font-weight: 800; color: var(--ink); user-select: none;
+}
+.met-card summary::-webkit-details-marker { display: none; }
+.met-card summary::before { content: "▸"; color: var(--forest); transition: transform 0.18s; display: inline-block; }
+.met-card[open] summary::before { transform: rotate(90deg); }
+.met-card summary small { font-size: 0.72rem; font-weight: 600; color: var(--vazio); letter-spacing: 0.02em; }
 .met-card h3 { font-size: 1rem; margin-bottom: 8px; }
 .met-card p, .met-card li { font-size: 0.9rem; color: var(--text); }
 .met-card ul { margin: 8px 0 0; padding-left: 20px; }
@@ -542,6 +579,14 @@ a { color: var(--forest); }
   </div>
 </div>
 
+<div class="aviso" id="aviso-console" hidden role="status">
+  <span class="aviso-ball" aria-hidden="true"></span>
+  <p class="aviso-txt">A página inteira muda pelos seletores do <strong>console fixo</strong> acima:
+  escolha os <strong>anos de início e fim</strong> (1985 → 2025) e o <strong>escopo</strong> — Brasil ou qualquer estado.
+  <span class="aviso-soft">Esta dica não voltará depois de fechada.</span></p>
+  <button type="button" id="aviso-fechar" aria-label="Fechar a dica">×</button>
+</div>
+
 <div class="directory">
   <div class="band-inner wrap">
     <a class="dir-item" href="#visao-geral"><span class="n">01</span><span class="t">Balanço da janela</span><span class="a">→</span></a>
@@ -577,17 +622,17 @@ a { color: var(--forest); }
     </div>
 
     <div class="estado-card" id="estado-card" hidden>
-      <div class="ec-zoom">
-        <label class="lbl2" id="ec-zoom-lbl">Contorno do estado</label>
-        <div class="ec-shape" id="estado-shape"></div>
-      </div>
       <div class="ec-loc">
         <label class="lbl2">Localização no Brasil</label>
         <div class="bmap" id="estado-loc"></div>
       </div>
+      <div class="ec-zoom">
+        <label class="lbl2" id="ec-zoom-lbl">Contorno do estado</label>
+        <div class="ec-shape" id="estado-shape"></div>
+      </div>
     </div>
 
-    <div class="dataset-card">
+    <div class="dataset-card" id="cobertura-card">
       <div>
         <span class="ds-tag"><span class="ds-dot"></span> Cobertura completa</span>
         <h3>40 anos de origem × 40 anos de destino</h3>
@@ -740,8 +785,8 @@ a { color: var(--forest); }
         <div class="evo-cols" id="evo-cols"></div>
         <div class="evo-axis" id="evo-axis"></div>
         <div class="evo-readout num" id="evo-readout"></div>
-        <p class="hint evo-perm-hint" id="evo-perm-hint">Fundo claro: o quanto da soja da origem continuava soja em cada destino (escala própria). Passe o mouse pelas colunas para ler os valores.</p>
-        <div class="evo-cols evo-cols--perm" id="evo-cols-p"></div>
+        <p class="hint evo-perm-hint" id="evo-perm-hint">Linha cinza abaixo do eixo: o quanto da soja da origem <strong>continuava soja</strong> em cada destino (escala própria, área preenchida; passe o mouse nos pontos).</p>
+        <div class="evo-line-wrap" id="evo-line-p"></div>
       </div>
       <div class="evo-multi" id="evo-multi" hidden></div>
       <div class="evo-empty" id="evo-empty" hidden>Sem soja registrada nesta seleção no ano de origem escolhido.</div>
@@ -772,8 +817,11 @@ a { color: var(--forest); }
 <section class="section" id="metodologia">
   <div class="wrap band-inner">
     <div class="section-eyebrow">Método e cobertura</div>
-    <h2 class="section-title">Como os números foram gerados</h2>
-    <div class="met-card">
+    <h2 class="section-title">Metodologia</h2>
+    <p class="section-desc">Guia completo do processamento — clique no cabeçalho para abrir ou recolher.</p>
+    <details class="met-card" id="met-recolha">
+      <summary>Como os números foram gerados<small>clique para abrir · fechar</small></summary>
+      <div class="met-body">
       <h3>Classificação, pós-processamento e trajetórias</h3>
       <ul>
         <li>A série usa a classe <strong>Soja (39)</strong> do MapBiomas, cruzada com o uso da terra no <strong>ano de origem</strong> e no <strong>ano de destino</strong>, processada no Google Earth Engine sobre malhas de <strong>10 m</strong>.</li>
@@ -795,7 +843,8 @@ a { color: var(--forest); }
           • <strong>Demais classes → Soja</strong> — 23 Praia, Duna e Areal, 24 Área Urbanizada, 25 Outras Áreas não Vegetadas, 30 Mineração, 31 Aquicultura, 33 Rio, Lago e Oceano, 75 Usina Fotovoltaica, 91 Parque eólico (beta).</li>
         <li>As cores dos seis mapas de origem são a <strong>paleta fixa do projeto</strong> (#E83E8C, #A000D8, #E99400, #FFD21A, #238B57, #777777, nesta ordem dos grupos); dentro de cada mapa, os tons vão de tinta clara da própria matiz até a cor cheia no estado de maior área. Já as cores por classe nas barras/composições seguem a <strong>legenda oficial da Coleção 11</strong> (tabela publicada em 13/08/2026); “Outras classes” e as escalas de saldo são cores auxiliares deste site.</li>
       </ul>
-    </div>
+      </div>
+    </details>
   </div>
 </section>
 
@@ -1014,6 +1063,8 @@ a { color: var(--forest); }
     var o = +selO.value, dd = +selD.value;
     var rank = UFS.map(function (u, i) { return { i: i, v: ufPair(i, o, dd).v }; })
       .sort(function (a, b) { return b.v - a.v; }).slice(0, 4).map(function (x) { return x.i; });
+    var ui = +selUF.value;
+    if (ui >= 0) { rank = [ui].concat(rank.filter(function (x) { return x !== ui; })).slice(0, 4); }
     rank.forEach(function (i) { $("chip-" + i).checked = true; });
     SELS = rank.slice();
     syncChipsUI();
@@ -1504,10 +1555,10 @@ a { color: var(--forest); }
     var thN = metrica === "saldo" ? quantisTh(presentes.map(function (v) { return -v; }), 4) : null;
     var linhas = "";
     ANOS_D.forEach(function (d) {
-      linhas += '<div class="mx-h"><span>' + d + '</span></div>';
+      linhas += '<div class="mx-h" data-d="' + d + '"><span>' + d + '</span></div>';
     });
     ANOS_S1.forEach(function (o) {
-      linhas += '<div class="mx-lbl num">' + o + '</div>';
+      linhas += '<div class="mx-lbl num" data-o="' + o + '">' + o + '</div>';
       ANOS_D.forEach(function (d) {
         if (d <= o) { linhas += '<i class="mx-e"></i>'; return; }
         var v = val(o, d);
@@ -1533,7 +1584,7 @@ a { color: var(--forest); }
         return c + " " + (i * 100 / n).toFixed(1) + "% " + ((i + 1) * 100 / n).toFixed(1) + "%";
       }).join(",") + ")";
     }
-    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:5px;line-height:normal;font-size:0.55rem">origem ↓<br>destino →</div>' + linhas;
+    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:6px;line-height:normal;font-size:0.6rem;font-weight:700;color:var(--forest)">origem ↓<br><span style="color:var(--muted)">destino →</span></div>' + linhas;
     if (max <= 0) {
       $("matriz-grad").style.background = "#edf1eb";
       $("matriz-min").textContent = "0"; $("matriz-max").textContent = "sem dados";
@@ -1553,6 +1604,26 @@ a { color: var(--forest); }
     }
   }
   $("matriz-metrica").addEventListener("change", renderMatriz);
+  (function () {
+    var grid = $("matriz-grid"), ativo = [];
+    function limpaHi() {
+      ativo.forEach(function (el) { el.classList.remove("mx-hi", "mx-vi"); });
+      ativo = [];
+    }
+    grid.addEventListener("mousemove", function (e) {
+      var c = e.target.closest && e.target.closest(".mx-c");
+      if (!c || !c.hasAttribute("data-d")) { limpaHi(); return; }
+      if (ativo.length && ativo[0] === c) return;
+      limpaHi();
+      c.classList.add("mx-vi");
+      ativo.push(c);
+      var hd = grid.querySelector('.mx-h[data-d="' + c.getAttribute("data-d") + '"]');
+      var lo = grid.querySelector('.mx-lbl[data-o="' + c.getAttribute("data-o") + '"]');
+      if (hd) { hd.classList.add("mx-hi"); ativo.push(hd); }
+      if (lo) { lo.classList.add("mx-hi"); ativo.push(lo); }
+    });
+    grid.addEventListener("mouseleave", limpaHi);
+  })();
   $("matriz-grid").addEventListener("click", function (e) {
     var c = e.target.closest ? e.target.closest(".mx-c") : null;
     if (!c) return;
@@ -1818,7 +1889,7 @@ a { color: var(--forest); }
       S1 = null;
       $("evo-single").hidden = true;
       $("evo-empty").hidden = false;
-      $("evo-cols").innerHTML = ""; $("evo-axis").innerHTML = ""; $("evo-cols-p").innerHTML = "";
+      $("evo-cols").innerHTML = ""; $("evo-axis").innerHTML = ""; $("evo-line-p").innerHTML = "";
       return;
     }
     $("evo-single").hidden = false;
@@ -1837,13 +1908,21 @@ a { color: var(--forest); }
       axis += '<span>' + ((x.ano === o + 1 || x.ano === ultimo || x.ano % 5 === 0) ? x.ano : "") + '</span>';
     });
     $("evo-axis").innerHTML = axis;
-    var pcols = "";
+    var Wl = s.serie.length * 22, Hl = 120;
+    var pts = [], area = "", dots = "";
     s.serie.forEach(function (x, k) {
-      var h = x.p > 0 ? Math.max(0.8, 100 * x.p / maxP) : 0;
-      pcols += '<div class="evo-col"><div class="evo-zone pz" title="' + x.ano + ' · permaneceu ' + fmt.format(Math.round(x.p)) + ' ha">'
-        + (x.p > 0 ? '<i style="height:' + h.toFixed(2) + '%"></i>' : "") + '</div></div>';
+      var px = k * 22 + 11;
+      var py = Hl - 8 - 96 * x.p / maxP;
+      pts.push(px + "," + py.toFixed(1));
+      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="2.6" fill="var(--perm)" stroke="#fff" stroke-width="1"><title>' + x.ano + ' · permaneceu ' + fmt.format(Math.round(x.p)) + ' ha</title></circle>';
+      if (k < s.serie.length - 1) {
+        area += (k ? "L" : "M") + px + "," + py.toFixed(1) + " L" + (px + 22) + "," + (Hl - 8 - 96 * s.serie[k + 1].p / maxP).toFixed(1) + " ";
+      }
     });
-    $("evo-cols-p").innerHTML = pcols;
+    $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" preserveAspectRatio="none" style="width:100%;height:120px;display:block">'
+      + '<path d="M0,' + (Hl - 8) + ' ' + area + ' L' + (Wl - 11) + ',' + (Hl - 8) + ' Z" fill="var(--perm)" opacity="0.22"></path>'
+      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.2" stroke-linejoin="round"></polyline>'
+      + dots + '</svg>';
   }
 
   /* ---- ligações ---- */
@@ -1864,7 +1943,7 @@ a { color: var(--forest); }
     ["ranking", "mapa"].forEach(function (id) {
       $(id).style.display = br ? "" : "none";
     });
-    ["nl-ranking", "nl-mapa", "dir-ranking", "dir-mapa"].forEach(function (id) {
+    ["nl-ranking", "nl-mapa", "dir-ranking", "dir-mapa", "cobertura-card"].forEach(function (id) {
       $(id).hidden = !br;
     });
   }
@@ -1940,6 +2019,16 @@ a { color: var(--forest); }
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";
 
   renderAll();
+  (function () {
+    var aviso = $("aviso-console");
+    var visto = false;
+    try { visto = localStorage.getItem("soja39-dica-console") === "1"; } catch (e) {}
+    if (!visto) aviso.hidden = false;
+    $("aviso-fechar").addEventListener("click", function () {
+      aviso.hidden = true;
+      try { localStorage.setItem("soja39-dica-console", "1"); } catch (e) {}
+    });
+  })();
 })();
 /*</inline>*/
 </script>

@@ -203,6 +203,8 @@
     var o = +selO.value, dd = +selD.value;
     var rank = UFS.map(function (u, i) { return { i: i, v: ufPair(i, o, dd).v }; })
       .sort(function (a, b) { return b.v - a.v; }).slice(0, 4).map(function (x) { return x.i; });
+    var ui = +selUF.value;
+    if (ui >= 0) { rank = [ui].concat(rank.filter(function (x) { return x !== ui; })).slice(0, 4); }
     rank.forEach(function (i) { $("chip-" + i).checked = true; });
     SELS = rank.slice();
     syncChipsUI();
@@ -693,10 +695,10 @@
     var thN = metrica === "saldo" ? quantisTh(presentes.map(function (v) { return -v; }), 4) : null;
     var linhas = "";
     ANOS_D.forEach(function (d) {
-      linhas += '<div class="mx-h"><span>' + d + '</span></div>';
+      linhas += '<div class="mx-h" data-d="' + d + '"><span>' + d + '</span></div>';
     });
     ANOS_S1.forEach(function (o) {
-      linhas += '<div class="mx-lbl num">' + o + '</div>';
+      linhas += '<div class="mx-lbl num" data-o="' + o + '">' + o + '</div>';
       ANOS_D.forEach(function (d) {
         if (d <= o) { linhas += '<i class="mx-e"></i>'; return; }
         var v = val(o, d);
@@ -722,7 +724,7 @@
         return c + " " + (i * 100 / n).toFixed(1) + "% " + ((i + 1) * 100 / n).toFixed(1) + "%";
       }).join(",") + ")";
     }
-    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:5px;line-height:normal;font-size:0.55rem">origem ↓<br>destino →</div>' + linhas;
+    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:6px;line-height:normal;font-size:0.6rem;font-weight:700;color:var(--forest)">origem ↓<br><span style="color:var(--muted)">destino →</span></div>' + linhas;
     if (max <= 0) {
       $("matriz-grad").style.background = "#edf1eb";
       $("matriz-min").textContent = "0"; $("matriz-max").textContent = "sem dados";
@@ -742,6 +744,26 @@
     }
   }
   $("matriz-metrica").addEventListener("change", renderMatriz);
+  (function () {
+    var grid = $("matriz-grid"), ativo = [];
+    function limpaHi() {
+      ativo.forEach(function (el) { el.classList.remove("mx-hi", "mx-vi"); });
+      ativo = [];
+    }
+    grid.addEventListener("mousemove", function (e) {
+      var c = e.target.closest && e.target.closest(".mx-c");
+      if (!c || !c.hasAttribute("data-d")) { limpaHi(); return; }
+      if (ativo.length && ativo[0] === c) return;
+      limpaHi();
+      c.classList.add("mx-vi");
+      ativo.push(c);
+      var hd = grid.querySelector('.mx-h[data-d="' + c.getAttribute("data-d") + '"]');
+      var lo = grid.querySelector('.mx-lbl[data-o="' + c.getAttribute("data-o") + '"]');
+      if (hd) { hd.classList.add("mx-hi"); ativo.push(hd); }
+      if (lo) { lo.classList.add("mx-hi"); ativo.push(lo); }
+    });
+    grid.addEventListener("mouseleave", limpaHi);
+  })();
   $("matriz-grid").addEventListener("click", function (e) {
     var c = e.target.closest ? e.target.closest(".mx-c") : null;
     if (!c) return;
@@ -1007,7 +1029,7 @@
       S1 = null;
       $("evo-single").hidden = true;
       $("evo-empty").hidden = false;
-      $("evo-cols").innerHTML = ""; $("evo-axis").innerHTML = ""; $("evo-cols-p").innerHTML = "";
+      $("evo-cols").innerHTML = ""; $("evo-axis").innerHTML = ""; $("evo-line-p").innerHTML = "";
       return;
     }
     $("evo-single").hidden = false;
@@ -1026,13 +1048,21 @@
       axis += '<span>' + ((x.ano === o + 1 || x.ano === ultimo || x.ano % 5 === 0) ? x.ano : "") + '</span>';
     });
     $("evo-axis").innerHTML = axis;
-    var pcols = "";
+    var Wl = s.serie.length * 22, Hl = 120;
+    var pts = [], area = "", dots = "";
     s.serie.forEach(function (x, k) {
-      var h = x.p > 0 ? Math.max(0.8, 100 * x.p / maxP) : 0;
-      pcols += '<div class="evo-col"><div class="evo-zone pz" title="' + x.ano + ' · permaneceu ' + fmt.format(Math.round(x.p)) + ' ha">'
-        + (x.p > 0 ? '<i style="height:' + h.toFixed(2) + '%"></i>' : "") + '</div></div>';
+      var px = k * 22 + 11;
+      var py = Hl - 8 - 96 * x.p / maxP;
+      pts.push(px + "," + py.toFixed(1));
+      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="2.6" fill="var(--perm)" stroke="#fff" stroke-width="1"><title>' + x.ano + ' · permaneceu ' + fmt.format(Math.round(x.p)) + ' ha</title></circle>';
+      if (k < s.serie.length - 1) {
+        area += (k ? "L" : "M") + px + "," + py.toFixed(1) + " L" + (px + 22) + "," + (Hl - 8 - 96 * s.serie[k + 1].p / maxP).toFixed(1) + " ";
+      }
     });
-    $("evo-cols-p").innerHTML = pcols;
+    $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" preserveAspectRatio="none" style="width:100%;height:120px;display:block">'
+      + '<path d="M0,' + (Hl - 8) + ' ' + area + ' L' + (Wl - 11) + ',' + (Hl - 8) + ' Z" fill="var(--perm)" opacity="0.22"></path>'
+      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.2" stroke-linejoin="round"></polyline>'
+      + dots + '</svg>';
   }
 
   /* ---- ligações ---- */
@@ -1053,7 +1083,7 @@
     ["ranking", "mapa"].forEach(function (id) {
       $(id).style.display = br ? "" : "none";
     });
-    ["nl-ranking", "nl-mapa", "dir-ranking", "dir-mapa"].forEach(function (id) {
+    ["nl-ranking", "nl-mapa", "dir-ranking", "dir-mapa", "cobertura-card"].forEach(function (id) {
       $(id).hidden = !br;
     });
   }
@@ -1129,4 +1159,14 @@
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";
 
   renderAll();
+  (function () {
+    var aviso = $("aviso-console");
+    var visto = false;
+    try { visto = localStorage.getItem("soja39-dica-console") === "1"; } catch (e) {}
+    if (!visto) aviso.hidden = false;
+    $("aviso-fechar").addEventListener("click", function () {
+      aviso.hidden = true;
+      try { localStorage.setItem("soja39-dica-console", "1"); } catch (e) {}
+    });
+  })();
 })();
