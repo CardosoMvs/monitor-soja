@@ -7,7 +7,7 @@
   /* cores OFICIAIS da Coleção 11 do MapBiomas (legenda publicada em 13/08/2026) */
   var CORES = {
     3: "#1f8d49", 4: "#7dc975", 5: "#04381d", 6: "#007785", 7: "#228c70", 9: "#7a5900",
-    11: "#517979", 12: "#d6bc74", 15: "#ede8e3", 20: "#db7093", 21: "#fffec3",
+    11: "#517979", 12: "#d6bc74", 15: "#edde8e", 20: "#db7093", 21: "#ffefc3",
     23: "#ffa07a", 24: "#49271e", 25: "#db4d4f", 29: "#ad5100", 30: "#9c0027",
     31: "#091077", 32: "#fc8114", 33: "#2532e4", 35: "#9065d0", 40: "#c71585",
     41: "#f54ca9", 46: "#d68fe2", 47: "#9932cc", 48: "#e6ccff", 49: "#02d659",
@@ -313,15 +313,16 @@
       function seg(cls, area) {
         if (area <= 0) return "";
         var frac = area / e.t;
-        var rot = frac >= 0.12 ? '<span class="seg-rot num">' + resumo(area) + '</span>' : "";
-        return '<span class="seg ' + cls + '" style="flex:' + area + '" title="' + pct(area, e.t) + '">' + rot + '</span>';
+        var rot = frac >= 0.14 ? '<span class="seg-rot num">' + resumo(area) + '</span>' : "";
+        return '<span class="seg ' + cls + '" style="flex:' + area + '" data-lbl="' + resumo(area) + ' · ' + pct(area, e.t)
+          + '" title="' + resumo(area) + ' (' + pct(area, e.t) + ')">' + rot + '</span>';
       }
       html += '<div class="rank-row' + (MODO === "um" && e.i === ui ? ' hl' : '') + '"><div class="rank-head">'
         + '<span class="pos num">' + String(ordem).padStart(2, "0") + '</span>'
         + '<span class="uf">' + e.label + '</span>'
         + '<span class="val num">' + resumo(e.v + e.p) + ' mant. · saldo ' + resumo(e.v - e.d) + '</span></div>'
         + '<div class="bar-track"><div class="bar-stack" style="width:' + largura.toFixed(1) + '%">'
-        + seg("seg-se", e.v) + seg("seg-sd", e.d) + seg("seg-sp", e.p)
+        + seg("seg-sd", e.d) + seg("seg-se", e.v) + seg("seg-sp", e.p)
         + '</div></div></div>';
     });
     $("rank-list").innerHTML = html;
@@ -792,9 +793,9 @@
       return t;
     }
     Vs = pack(Vs); Ds = pack(Ds);
-    var W = 1088, HL = 205;
-    var xClE = 186, xClD = 774, NODEW = 120, xNode = 524;
-    var GUT_E = 176, GUT_D = 902;
+    var W = 1088, HL = 238;
+    var NODEW = 120;
+    var GUT_E = 176, GUT_D = 834;
 
     function fita(x0, y0, x1, y1, h1, h2, cor, tit) {
       var c = (x0 + x1) / 2;
@@ -803,12 +804,13 @@
         + ' Z" fill="' + cor + '" opacity="0.38"><title>' + tit + '</title></path>';
     }
     function diagrama(lst, total, YTOP, fluxoSai, corNode, nomeNode) {
-      // fluxoSai=false: classes (esquerda) → soja (centro). true: soja (centro) → classes (direita)
+      // fluxoSai=false: classes (esquerda) → soja (direita). true: soja (esquerda) → classes (direita)
+      var xNode = fluxoSai ? 130 : 838;
       var frags = "";
       var titulo = fluxoSai
         ? "Para onde foi a soja que saiu · " + o + " → " + dd + " · " + resumo(total)
         : "De onde veio a soja nova · " + o + " → " + dd + " · " + resumo(total);
-      frags += '<text x="' + (W / 2) + '" y="' + (YTOP - 12) + '" text-anchor="middle" font-size="13.5" font-weight="800" fill="#18362d">' + titulo + '</text>';
+      frags += '<text x="176" y="' + (YTOP - 12) + '" text-anchor="start" font-size="13.5" font-weight="800" fill="#18362d">' + titulo + '</text>';
       var y = YTOP, cum = 0;
       lst.forEach(function (c) {
         var h = HL * c.area / total;
@@ -816,8 +818,8 @@
         var nm = c.id === null ? "Outras classes" : CLS[c.id];
         var cor = c.id === null ? "#c3cdc6" : (CORES[c.id] || corCls(c.id));
         var titF = nm + " — " + resumo(c.area) + " (" + pct(c.area, total) + ")";
-        var bx = fluxoSai ? xClD : xClE;
-        var xNodeBorda = fluxoSai ? xNode + NODEW : xNode;
+        var bx = fluxoSai ? 704 : 186;
+        var xNodeBorda = fluxoSai ? 250 : 838;
         var xClBorda = fluxoSai ? bx : bx + NODEW;
         // fita: de classe → centro (esq) ou centro → classe (dir)
         if (fluxoSai) frags += fita(xNodeBorda, yC, xClBorda, y, h, h, cor, titF);
@@ -844,7 +846,7 @@
         + '<text x="' + (xNode + NODEW / 2) + '" y="' + (YTOP + HL / 2 + 14) + '" text-anchor="middle" font-size="12.5" font-weight="800" fill="#fff">' + resumo(total) + '</text>';
       return frags;
     }
-    var Y1 = 30, Y2 = Y1 + HL + 66;
+    var Y1 = 34, Y2 = Y1 + HL + 70;
     var H = Ds.length ? (Y2 + HL + 30) : (Y1 + HL + 30);
     var svg = '<svg class="esvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Sankey de fluxos de uso da terra (' + nome + ', ' + o + ' → ' + dd + ')">';
     if (Vs.length) svg += diagrama(Vs, rec.v, Y1, false, "var(--forest)", "soja nova");
@@ -1048,20 +1050,20 @@
       axis += '<span>' + ((x.ano === o + 1 || x.ano === ultimo || x.ano % 5 === 0) ? x.ano : "") + '</span>';
     });
     $("evo-axis").innerHTML = axis;
-    var Wl = s.serie.length * 22, Hl = 120;
-    var pts = [], area = "", dots = "";
+    var Wl = s.serie.length * 22, Hl = 130;
+    var pts = [], dots = "";
     s.serie.forEach(function (x, k) {
       var px = k * 22 + 11;
-      var py = Hl - 8 - 96 * x.p / maxP;
-      pts.push(px + "," + py.toFixed(1));
-      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="2.6" fill="var(--perm)" stroke="#fff" stroke-width="1"><title>' + x.ano + ' · permaneceu ' + fmt.format(Math.round(x.p)) + ' ha</title></circle>';
-      if (k < s.serie.length - 1) {
-        area += (k ? "L" : "M") + px + "," + py.toFixed(1) + " L" + (px + 22) + "," + (Hl - 8 - 96 * s.serie[k + 1].p / maxP).toFixed(1) + " ";
-      }
+      var py = Hl - 10 - 100 * (maxP > 0 ? x.p / maxP : 0);
+      pts.push((px) + "," + py.toFixed(1));
+      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="2.8" fill="var(--perm)" stroke="#fff" stroke-width="1"><title>' + x.ano + ' · permaneceu ' + fmt.format(Math.round(x.p)) + ' ha</title></circle>';
     });
-    $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" preserveAspectRatio="none" style="width:100%;height:120px;display:block">'
-      + '<path d="M0,' + (Hl - 8) + ' ' + area + ' L' + (Wl - 11) + ',' + (Hl - 8) + ' Z" fill="var(--perm)" opacity="0.22"></path>'
-      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.2" stroke-linejoin="round"></polyline>'
+    var base = Hl - 10;
+    var areaPath = "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (Wl - 11) + "," + base + " L11," + base + " Z";
+    $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" preserveAspectRatio="none" style="width:100%;height:130px;display:block">'
+      + '<line x1="11" y1="' + base + '" x2="' + (Wl - 11) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1"></line>'
+      + '<path d="' + areaPath + '" fill="var(--perm)" opacity="0.2"></path>'
+      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.4" stroke-linejoin="round"></polyline>'
       + dots + '</svg>';
   }
 
@@ -1163,7 +1165,10 @@
     var aviso = $("aviso-console");
     var visto = false;
     try { visto = localStorage.getItem("soja39-dica-console") === "1"; } catch (e) {}
-    if (!visto) aviso.hidden = false;
+    if (!visto) {
+      aviso.hidden = false;
+      aviso.classList.add("pulsando");
+    }
     $("aviso-fechar").addEventListener("click", function () {
       aviso.hidden = true;
       try { localStorage.setItem("soja39-dica-console", "1"); } catch (e) {}
