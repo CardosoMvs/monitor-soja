@@ -1131,6 +1131,15 @@
       + dots + ticks + '</svg>';
   }
 
+  function ticksDe(array, passo, fn) {
+    var t = "";
+    array.forEach(function (x, i) {
+      var lbl = fn(x);
+      if (lbl === null) return;
+      t += '<text x="' + (i * passo + passo / 2).toFixed(1) + '" y="13" font-size="9.5" font-weight="700" fill="var(--muted)" text-anchor="middle">' + lbl + '</text>';
+    });
+    return t;
+  }
   function renderHistoria() {
     var ui = +selUF.value;
     var use = ui < 0 ? null : ui;
@@ -1147,11 +1156,31 @@
       $("h-soja-nota").textContent = "";
     } else {
       var maxA = serieA.reduce(function (a, x) { return Math.max(a, x.v); }, 0);
+      var picoA = serieA.reduce(function (a, x) { return x.v > a.v ? x : a; }, serieA[0]);
       serieA.forEach(function (x) { x.rel = x.v / maxA; });
-      var sp = svgPx(boxA, 150);
-      boxA.innerHTML = linhaSvg(serieA, sp, "var(--forest)", function (x) { return x.ano + " · soja total " + resumo(x.v); }, serieA[0].ano, serieA[serieA.length - 1].ano);
+      var sp = svgPx(boxA, 210);
+      var passoA = sp.W / serieA.length;
+      var ticks = serieA.map(function (x, i) {
+        if (x.ano % 5 !== 0) return null;
+        return '<text x="' + (i * passoA + passoA / 2).toFixed(1) + '" y="' + (sp.H + 12) + '" font-size="10" font-weight="700" fill="var(--muted)" text-anchor="middle">' + x.ano + '</text>';
+      }).join("");
+      var ptsA = [], dotsA = "";
+      serieA.forEach(function (x, i) {
+        ptsA.push((i * passoA + passoA / 2).toFixed(1) + "," + (sp.H - 20 - (sp.H - 44) * x.rel).toFixed(1));
+        dotsA += '<circle cx="' + (i * passoA + passoA / 2).toFixed(1) + '" cy="' + (sp.H - 20 - (sp.H - 44) * x.rel).toFixed(1) + '" r="3.4" fill="var(--forest)" stroke="#fff" stroke-width="1.1"><title>' + x.ano + ' · soja total ' + resumo(x.v) + '</title></circle>';
+      });
+      var baseA = sp.H - 20;
+      var areaA = "M" + ptsA[0] + " L" + ptsA.slice(1).join(" L") + " L" + (sp.W - passoA / 2).toFixed(1) + "," + baseA + " L" + (passoA / 2).toFixed(1) + "," + baseA + " Z";
+      var topoA = (baseA - (sp.H - 44)).toFixed(1);
+      boxA.innerHTML = '<svg viewBox="0 0 ' + sp.W + ' ' + (sp.H + 18) + '" style="display:block;width:100%;height:' + (sp.H + 18) + 'px">'
+        + '<line x1="30" y1="' + topoA + '" x2="' + sp.W + '" y2="' + topoA + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+        + '<line x1="30" y1="' + baseA + '" x2="' + sp.W + '" y2="' + baseA + '" stroke="var(--line)" stroke-width="1.3"></line>'
+        + '<path d="' + areaA + '" fill="var(--forest)" opacity="0.14"></path>'
+        + '<polyline points="' + ptsA.join(" ") + '" fill="none" stroke="var(--forest)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
+        + dotsA + ticks + '</svg>';
       var g0 = serieA[0].v, gN = serieA[serieA.length - 1].v;
-      $("h-soja-nota").textContent = serieA[0].ano + ": " + resumo(g0) + " → " + serieA[serieA.length - 1].ano + ": " + resumo(gN) + (g0 > 0 ? " (" + (gN / g0 >= 1 ? "×" + (gN / g0).toFixed(1).replace(".", ",") : "−" + (100 * (1 - gN / g0)).toFixed(0) + "%)") : "") + " · escala até " + resumo(maxA);
+      $("h-soja-nota").textContent = serieA[0].ano + ": " + resumo(g0) + " → " + serieA[serieA.length - 1].ano + ": " + resumo(gN)
+        + " · pico em " + picoA.ano + ": " + resumo(picoA.v) + " · eixo: 0 a " + resumo(maxA);
       $("h-soja-tit").textContent = "Área de soja por ano" + (use === null ? " — Brasil" : " — " + UFS[use][1]);
     }
     /* B — retenção média por idade */
@@ -1161,49 +1190,81 @@
     for (var k = 1; k <= 40; k++) {
       var rec = src[k];
       if (rec.d <= 0) continue;
-      serieB.push({ k: k, rel: rec.n / rec.d, ano: null });
+      serieB.push({ k: k, rel: rec.n / rec.d });
     }
     if (!serieB.length) {
       boxB.innerHTML = '<p class="hint" style="padding:18px 2px">Sem coortes mensuráveis para este escopo.</p>';
       $("h-ret-nota").textContent = "";
     } else {
-      var spB = svgPx(boxB, 150);
-      boxB.innerHTML = linhaSvg(serieB, spB, "var(--perm)",
-        function (x) { return "idade " + x.k + " anos · " + (100 * x.rel).toFixed(1).replace(".", ",") + "% ainda soja"; }, "1 ano", serieB[serieB.length - 1].k + " anos");
+      var spB = svgPx(boxB, 190);
+      var passB = spB.W / serieB.length;
+      var ptsB = [], dotsB = "", ticksB = "";
+      serieB.forEach(function (x, i) {
+        var px = (i * passB + passB / 2).toFixed(1);
+        var py = (spB.H - 20 - (spB.H - 44) * x.rel).toFixed(1);
+        ptsB.push(px + "," + py);
+        dotsB += '<circle cx="' + px + '" cy="' + py + '" r="3.4" fill="var(--perm)" stroke="#fff" stroke-width="1.1"><title>idade ' + x.k + ' · ' + (100 * x.rel).toFixed(1).replace(".", ",") + '% ainda soja</title></circle>';
+        if ([5, 10, 15, 20, 25, 30, 35, 40].indexOf(x.k) >= 0) {
+          ticksB += '<text x="' + px + '" y="' + (spB.H + 12) + '" font-size="10" font-weight="700" fill="var(--muted)" text-anchor="middle">' + x.k + ' anos</text>';
+        }
+      });
+      var baseB = spB.H - 20, topoB = (baseB - (spB.H - 44)).toFixed(1);
+      var areaB = "M" + ptsB[0] + " L" + ptsB.slice(1).join(" L") + " L" + (spB.W - passB / 2).toFixed(1) + "," + baseB + " L" + (passB / 2).toFixed(1) + "," + baseB + " Z";
+      var meioB = (2 * baseB) - (+topoB);
+      boxB.innerHTML = '<svg viewBox="0 0 ' + spB.W + ' ' + (spB.H + 18) + '" style="display:block;width:100%;height:' + (spB.H + 18) + 'px">'
+        + '<line x1="30" y1="' + topoB + '" x2="' + spB.W + '" y2="' + topoB + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+        + '<text x="2" y="' + (+topoB + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">100%</text>'
+        + '<text x="2" y="' + (meioB + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">50</text>'
+        + '<text x="2" y="' + (baseB + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
+        + '<line x1="30" y1="' + baseB + '" x2="' + spB.W + '" y2="' + baseB + '" stroke="var(--line)" stroke-width="1.3"></line>'
+        + '<path d="' + areaB + '" fill="var(--perm)" opacity="0.14"></path>'
+        + '<polyline points="' + ptsB.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
+        + dotsB + ticksB + '</svg>';
       var r10 = src[10];
       $("h-ret-nota").textContent = r10.d > 0
-        ? "média no escopo: idade 10 = " + (100 * r10.n / r10.d).toFixed(1).replace(".", ",") + "%"
+        ? "escopo: idade 10 anos = " + (100 * r10.n / r10.d).toFixed(1).replace(".", ",") + "% ainda soja (passe o mouse nos pontos)"
         : "média sobre as coortes do escopo";
     }
     /* C — coortes por década */
     var boxC = $("h-coortes");
     var COORTES = [1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020];
-    var spC = svgPx(boxC, 170);
+    var spC = svgPx(boxC, 210);
     var maxKC = Math.max.apply(null, COORTES.map(function (o2) { return ANOS[ANOS.length - 1] - o2; }));
-    var passoC = spC.W / maxKC;
-    var coo = "", leg = "";
+    var passoC = (spC.W - 30) / maxKC;
+    var coo = "", leg = "", ticksC = "";
+    COORTES.forEach(function (kT) {
+      if (kT % 5 === 0 && kT <= maxKC) {
+        ticksC += '<text x="' + (10 + kT * passoC).toFixed(1) + '" y="' + (spC.H + 12) + '" font-size="10" font-weight="700" fill="var(--muted)" text-anchor="middle">' + kT + '</text>';
+      }
+    });
     COORTES.forEach(function (o2, ci) {
       var cor = PALETA[ci % PALETA.length];
       var serieCo = [];
       for (var k2 = 1; k2 <= ANOS[ANOS.length - 1] - o2; k2++) {
-        var recC = (use === null ? RET_BR : RET_ID[use])[k2];
         var wC = janelaCo(use, o2, o2 + k2);
         if (wC.d <= 0) continue;
-        serieCo.push({ rel: wC.p / (wC.p + wC.d), k: k2, ano: o2 + k2 });
+        serieCo.push({ rel: wC.p / (wC.p + wC.d), k: k2 });
       }
       if (serieCo.length < 2) return;
-      var ptsC = serieCo.map(function (x) {
-        var px = (x.k * passoC).toFixed(1), py = (spC.H - 18 - (spC.H - 34) * x.rel).toFixed(1);
-        return px + "," + py;
-      });
-      coo += '<polyline points="' + ptsC.join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="1.8" stroke-linejoin="round" opacity="0.9"></polyline>';
-      coo += '<circle cx="' + ptsC[ptsC.length - 1].split(",")[0] + '" cy="' + ptsC[ptsC.length - 1].split(",")[1] + '" r="2.6" fill="' + cor + '"><title>coorte ' + o2 + '</title></circle>';
-      leg += '<span class="key" style="font-size:0.72rem;margin-right:12px"><span class="sw" style="background:' + cor + '"></span> ' + o2 + '</span>';
+      var ptsC = serieCo.map(function (x) { return (10 + x.k * passoC).toFixed(1) + "," + (spC.H - 20 - (spC.H - 44) * x.rel).toFixed(1); });
+      coo += '<polyline points="' + ptsC.join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linejoin="round" opacity="0.92"></polyline>';
+      var fim = ptsC[ptsC.length - 1].split(",");
+      var fimX = +fim[0];
+      var anchor = fimX > spC.W - 44 ? "end" : "start";
+      var lx = anchor === "end" ? fimX - 5 : fimX + 5;
+      coo += '<circle cx="' + fim[0] + '" cy="' + fim[1] + '" r="3" fill="' + cor + '"></circle>'
+        + '<text x="' + lx + '" y="' + (+fim[1] + 3.5) + '" font-size="10.5" font-weight="800" fill="' + cor + '" text-anchor="' + anchor + '">' + o2 + '</text>';
+      leg += '<span class="key" style="font-size:0.72rem;margin-right:12px"><span class="sw" style="background:' + cor + '"></span> coorte ' + o2 + '</span>';
     });
-    boxC.innerHTML = '<svg viewBox="0 0 ' + spC.W + ' ' + spC.H + '" style="display:block;width:100%;height:' + spC.H + 'px">'
-      + '<line x1="10" y1="' + (spC.H - 18 - (spC.H - 34)) + '" x2="' + spC.W + '" y2="' + (spC.H - 18 - (spC.H - 34)) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="10" y1="' + (spC.H - 18) + '" x2="' + spC.W + '" y2="' + (spC.H - 18) + '" stroke="var(--line)" stroke-width="1.3"></line>'
-      + coo + '</svg>';
+    var topoC = (spC.H - 20 - (spC.H - 44)).toFixed(1);
+    var meioC = (2 * (spC.H - 20)) - (+topoC);
+    boxC.innerHTML = '<svg viewBox="0 0 ' + spC.W + ' ' + (spC.H + 16) + '" style="display:block;width:100%;height:' + (spC.H + 16) + 'px">'
+      + '<line x1="34" y1="' + topoC + '" x2="' + spC.W + '" y2="' + topoC + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+      + '<text x="2" y="' + (+topoC + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">100%</text>'
+      + '<text x="2" y="' + (meioC + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">50</text>'
+      + '<text x="6" y="' + ((spC.H - 20) + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
+      + '<line x1="34" y1="' + (spC.H - 20) + '" x2="' + spC.W + '" y2="' + (spC.H - 20) + '" stroke="var(--line)" stroke-width="1.3"></line>'
+      + coo + ticksC + '</svg>';
     $("h-coo-leg").innerHTML = leg || '<span class="hint">Sem coortes com série suficiente.</span>';
   }
   function janelaCo(use, o2, d2) {
