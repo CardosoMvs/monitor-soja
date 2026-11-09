@@ -899,7 +899,7 @@ a { color: var(--forest); }
         <button type="button" id="mode-cmp">Comparar estados</button>
       </div>
       <span class="hint" id="escopo-hint">O estado analisado é o <strong>Escopo</strong> do console (ou clique num estado no mapa); “Um estado” abre a ficha dele, com sankey.</span>
-      <span class="cmp-count" id="cmp-count" hidden>0 de 5 selecionados</span>
+      <span class="cmp-count" id="cmp-count" hidden>nenhum estado por enquanto</span>
     </div>
     <div id="uf-chips"></div>
     <div class="state-panel" id="state-panel"></div>
@@ -1159,7 +1159,6 @@ a { color: var(--forest); }
 
   /* ---- estado da seleção de estado(s) ---- */
   var MODO = "um";       // "um" | "comparar"
-  var MAX_CMP = 5;
   var SELS = [];         // índices de UF em modo comparar (ordem de marcação)
 
   function setModo(m) {
@@ -1205,12 +1204,7 @@ a { color: var(--forest); }
       var el = $("chip-" + i);
       if (el) el.classList.toggle("on", el.checked);
     });
-    $("cmp-count").textContent = SELS.length + " de " + MAX_CMP + " selecionados";
-    var lotado = SELS.length >= MAX_CMP;
-    UFS.forEach(function (u, i) {
-      var el = $("chip-" + i);
-      if (el) el.classList.toggle("max", lotado && !el.checked);
-    });
+    $("cmp-count").textContent = SELS.length + " selecionados para comparar";
     $("cmp-empty").hidden = SELS.length > 0;
   }
 
@@ -1224,8 +1218,7 @@ a { color: var(--forest); }
     inp.id = "chip-" + i;
     inp.addEventListener("change", function () {
       if (inp.checked) {
-        if (SELS.length >= MAX_CMP) { inp.checked = false; return; }
-        SELS.push(i);
+          SELS.push(i);
       } else {
         SELS = SELS.filter(function (x) { return x !== i; });
       }
