@@ -2201,7 +2201,10 @@ a { color: var(--forest); }
 
   selO.addEventListener("change", function () { opcoesDestino(); renderAll(); });
   selD.addEventListener("change", renderAll);
-  selUF.addEventListener("change", renderAll);
+  selUF.addEventListener("change", function () {
+    if (MODO !== "um") setModo("um");   // trocar o escopo volta ao padrão: um estado
+    renderAll();
+  });
 
   try {
     window.addEventListener("resize", function () {
