@@ -405,6 +405,7 @@ a { color: var(--forest); }
 .evo-perm-hint { margin-top: 10px; }
 .evo-line-wrap { margin-top: 4px; }
 .evo-empty { margin-top: 12px; color: var(--muted); font-size: 0.88rem; padding: 16px 4px; }
+.evo-multi[hidden] { display: none; }
 .evo-multi { display: grid; gap: 16px; margin-top: 18px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
 .mini-evo { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 12px 8px; background: var(--surface); }
 .mini-evo h4 { font-size: 0.85rem; }
@@ -454,6 +455,7 @@ a { color: var(--forest); }
 .state-empty { padding: 30px 6px; color: var(--muted); font-size: 0.92rem; }
 
 /* --- comparação de estados --- */
+.cmp-grid[hidden] { display: none; }
 .cmp-grid { display: grid; gap: 14px; margin-top: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 880px) { .cmp-grid { grid-template-columns: 1fr; } }
 .cmp-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; overflow-wrap: anywhere; min-width: 0; }
