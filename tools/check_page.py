@@ -53,6 +53,7 @@ El.prototype.querySelectorAll = function (sel) {
   return out;
 };
 El.prototype.querySelector = function (sel) { var r = this.querySelectorAll(sel); return r.length ? r[0] : null; };
+var location = { hash: "" };
 var REG = {};
 function getEl(id) { if (!REG[id]) REG[id] = new El(id); return REG[id]; }
 getEl("mapa-metrica").value = "virou";
@@ -137,6 +138,22 @@ step("escopo de volta ao Brasil", function () {
   log("st-ufs-l:", REG["st-ufs-l"].textContent, "| st-ufs:", REG["st-ufs"].textContent);
 });
 
+
+step("textos dinâmicos + card do estado (escopo MT)", function () {
+  var esc = document.getElementById("escopo");
+  esc.value = "10"; esc._fire("change", {});
+  log("vg-eyebrow:", REG["vg-eyebrow"].textContent);
+  log("vg-title:", REG["vg-title"].textContent);
+  log("ef-eyebrow:", REG["ef-eyebrow"].textContent);
+  log("card visível:", String(!REG["estado-card"].hidden));
+  log("loc paths:", String(REG["estado-loc"].children.length ? REG["estado-loc"].children[0].children.length : 0));
+  log("zoom viewBox:", String(REG["estado-shape"].children.length ? REG["estado-shape"].children[0].children[0].__viewBox : "n/a"));
+});
+step("Brasil: card esconde", function () {
+  var esc = document.getElementById("escopo");
+  esc.value = "-1"; esc._fire("change", {});
+  log("card hidden:", String(REG["estado-card"].hidden), "| vg-title:", REG["vg-title"].textContent);
+});
 step("visibilidade: escopo estado esconde ranking/mapa", function () {
   var esc = document.getElementById("escopo");
   esc.value = "10"; esc._fire("change", {});
