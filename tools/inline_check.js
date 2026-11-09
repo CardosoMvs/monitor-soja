@@ -82,29 +82,6 @@
 
   function ufPair(i, o, dd) { return IDX[i][o + "-" + dd] || { v: 0, d: 0, p: 0, dv: null, dd: null }; }
 
-  /* retenção por idade k: num[k]=Σ permaneceu, den[k]=Σ (permaneceu+deixou) — todas as janelas com fim−início=k */
-  function novoVetor() { var a = []; for (var i = 0; i <= 40; i++) a.push({ n: 0, d: 0 }); return a; }
-  var RET_ID = DADOS.t.map(function (grupos) {
-    var v = novoVetor();
-    grupos.forEach(function (g) {
-      var rec = { p: 0, d: 0 };
-      var s = 0;
-      g[3].forEach(function (c) { s += c[1]; });
-      if (g[2] === 2) rec.p = s;
-      if (g[2] === 1) rec.d = s;
-      var k = g[1] - g[0];
-      if (k >= 1 && k <= 40) {
-        v[k].n += rec.p;
-        v[k].d += rec.p + rec.d;
-      }
-    });
-    return v;
-  });
-  var RET_BR = novoVetor();
-  RET_ID.forEach(function (v, i) {
-    if (!UFS[i] || false) return;
-    for (var k = 1; k <= 40; k++) { RET_BR[k].n += v[k].n; RET_BR[k].d += v[k].d; }
-  });
 
   function agrega(o, dd) {
     var k = o + "-" + dd;
@@ -1102,177 +1079,6 @@
       + dots + '</svg>';
   }
 
-  /* ---- séries históricas ---- */
-  function svgPx(box, H) { return { W: Math.min(1240, Math.max(300, box.clientWidth || 320)), H: H }; }
-  function eixoRel(sp, rel) { var base = sp.H - 18; return (base - (sp.H - 34) * rel).toFixed(1); }
-
-  function linhaSvg(serie, sp, cor, titFn, primeiroTick, ultimoTick) {
-    var passo = sp.W / serie.length;
-    var pts = [], dots = "";
-    serie.forEach(function (x, i) {
-      var px = (i * passo + passo / 2).toFixed(1);
-      var py = (sp.H - 18 - (sp.H - 34) * x.rel).toFixed(1);
-      pts.push(px + "," + py);
-      dots += '<circle cx="' + px + '" cy="' + py + '" r="3.2" fill="' + cor + '" stroke="#fff" stroke-width="1.1"><title>' + titFn(x) + '</title></circle>';
-    });
-    var base = sp.H - 18;
-    var areaPath = pts.length > 1
-      ? "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (sp.W - passo / 2).toFixed(1) + "," + base + " L" + (passo / 2).toFixed(1) + "," + base + " Z"
-      : "";
-    var ticks = "";
-    if (primeiroTick != null) ticks += '<text x="' + (passo / 2).toFixed(1) + '" y="' + (sp.H - 4) + '" font-size="9.5" font-weight="700" fill="var(--muted)">' + primeiroTick + '</text>';
-    if (ultimoTick != null) ticks += '<text x="' + (sp.W - passo / 2).toFixed(1) + '" y="' + (sp.H - 4) + '" font-size="9.5" font-weight="700" fill="var(--muted)" text-anchor="end">' + ultimoTick + '</text>';
-    return '<svg viewBox="0 0 ' + sp.W + ' ' + sp.H + '" style="display:block;width:100%;height:' + sp.H + 'px">'
-      + '<line x1="26" y1="' + (base - (sp.H - 34)) + '" x2="' + sp.W + '" y2="' + (base - (sp.H - 34)) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="26" y1="' + (base - (sp.H - 34) / 2) + '" x2="' + sp.W + '" y2="' + (base - (sp.H - 34) / 2) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="26" y1="' + base + '" x2="' + sp.W + '" y2="' + base + '" stroke="var(--line)" stroke-width="1.3"></line>'
-      + (areaPath ? '<path d="' + areaPath + '" fill="' + cor + '" opacity="0.16"></path>' : "")
-      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"></polyline>'
-      + dots + ticks + '</svg>';
-  }
-
-  function ticksDe(array, passo, fn) {
-    var t = "";
-    array.forEach(function (x, i) {
-      var lbl = fn(x);
-      if (lbl === null) return;
-      t += '<text x="' + (i * passo + passo / 2).toFixed(1) + '" y="13" font-size="9.5" font-weight="700" fill="var(--muted)" text-anchor="middle">' + lbl + '</text>';
-    });
-    return t;
-  }
-  function renderHistoria() {
-    var ui = +selUF.value;
-    var use = ui < 0 ? null : ui;
-    /* A — área de soja por ano */
-    var boxA = $("h-soja");
-    var serieA = [];
-    for (var y = ANOS[0] + 1; y <= ANOS[ANOS.length - 1]; y++) {
-      var r = use === null ? agrega(y - 1, y) : ufPair(use, y - 1, y);
-      var total = (r.v || 0) + (r.p || 0);
-      if (total > 0) serieA.push({ rel: null, v: total, ano: y });
-    }
-    if (!serieA.length) {
-      boxA.innerHTML = '<p class="hint" style="padding:18px 2px">Sem soja registrada para este escopo.</p>';
-      $("h-soja-nota").textContent = "";
-    } else {
-      var maxA = serieA.reduce(function (a, x) { return Math.max(a, x.v); }, 0);
-      var picoA = serieA.reduce(function (a, x) { return x.v > a.v ? x : a; }, serieA[0]);
-      serieA.forEach(function (x) { x.rel = x.v / maxA; });
-      var sp = svgPx(boxA, 210);
-      var passoA = sp.W / serieA.length;
-      var ticks = serieA.map(function (x, i) {
-        if (x.ano % 5 !== 0) return null;
-        return '<text x="' + (i * passoA + passoA / 2).toFixed(1) + '" y="' + (sp.H + 12) + '" font-size="10" font-weight="700" fill="var(--muted)" text-anchor="middle">' + x.ano + '</text>';
-      }).join("");
-      var ptsA = [], dotsA = "";
-      serieA.forEach(function (x, i) {
-        ptsA.push((i * passoA + passoA / 2).toFixed(1) + "," + (sp.H - 20 - (sp.H - 44) * x.rel).toFixed(1));
-        dotsA += '<circle cx="' + (i * passoA + passoA / 2).toFixed(1) + '" cy="' + (sp.H - 20 - (sp.H - 44) * x.rel).toFixed(1) + '" r="3.4" fill="var(--forest)" stroke="#fff" stroke-width="1.1"><title>' + x.ano + ' · soja total ' + resumo(x.v) + '</title></circle>';
-      });
-      var baseA = sp.H - 20;
-      var areaA = "M" + ptsA[0] + " L" + ptsA.slice(1).join(" L") + " L" + (sp.W - passoA / 2).toFixed(1) + "," + baseA + " L" + (passoA / 2).toFixed(1) + "," + baseA + " Z";
-      var topoA = (baseA - (sp.H - 44)).toFixed(1);
-      boxA.innerHTML = '<svg viewBox="0 0 ' + sp.W + ' ' + (sp.H + 18) + '" style="display:block;width:100%;height:' + (sp.H + 18) + 'px">'
-        + '<line x1="30" y1="' + topoA + '" x2="' + sp.W + '" y2="' + topoA + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-        + '<line x1="30" y1="' + baseA + '" x2="' + sp.W + '" y2="' + baseA + '" stroke="var(--line)" stroke-width="1.3"></line>'
-        + '<path d="' + areaA + '" fill="var(--forest)" opacity="0.14"></path>'
-        + '<polyline points="' + ptsA.join(" ") + '" fill="none" stroke="var(--forest)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
-        + dotsA + ticks + '</svg>';
-      var g0 = serieA[0].v, gN = serieA[serieA.length - 1].v;
-      $("h-soja-nota").textContent = serieA[0].ano + ": " + resumo(g0) + " → " + serieA[serieA.length - 1].ano + ": " + resumo(gN)
-        + " · pico em " + picoA.ano + ": " + resumo(picoA.v) + " · eixo: 0 a " + resumo(maxA);
-      $("h-soja-tit").textContent = "Área de soja por ano" + (use === null ? " — Brasil" : " — " + UFS[use][1]);
-    }
-    /* B — retenção média por idade */
-    var boxB = $("h-ret");
-    var src = use === null ? RET_BR : RET_ID[use];
-    var serieB = [];
-    for (var k = 1; k <= 40; k++) {
-      var rec = src[k];
-      if (rec.d <= 0) continue;
-      serieB.push({ k: k, rel: rec.n / rec.d });
-    }
-    if (!serieB.length) {
-      boxB.innerHTML = '<p class="hint" style="padding:18px 2px">Sem coortes mensuráveis para este escopo.</p>';
-      $("h-ret-nota").textContent = "";
-    } else {
-      var spB = svgPx(boxB, 190);
-      var passB = spB.W / serieB.length;
-      var ptsB = [], dotsB = "", ticksB = "";
-      serieB.forEach(function (x, i) {
-        var px = (i * passB + passB / 2).toFixed(1);
-        var py = (spB.H - 20 - (spB.H - 44) * x.rel).toFixed(1);
-        ptsB.push(px + "," + py);
-        dotsB += '<circle cx="' + px + '" cy="' + py + '" r="3.4" fill="var(--perm)" stroke="#fff" stroke-width="1.1"><title>idade ' + x.k + ' · ' + (100 * x.rel).toFixed(1).replace(".", ",") + '% ainda soja</title></circle>';
-        if ([5, 10, 15, 20, 25, 30, 35, 40].indexOf(x.k) >= 0) {
-          ticksB += '<text x="' + px + '" y="' + (spB.H + 12) + '" font-size="10" font-weight="700" fill="var(--muted)" text-anchor="middle">' + x.k + ' anos</text>';
-        }
-      });
-      var baseB = spB.H - 20, topoB = (baseB - (spB.H - 44)).toFixed(1);
-      var areaB = "M" + ptsB[0] + " L" + ptsB.slice(1).join(" L") + " L" + (spB.W - passB / 2).toFixed(1) + "," + baseB + " L" + (passB / 2).toFixed(1) + "," + baseB + " Z";
-      var meioB = (2 * baseB) - (+topoB);
-      boxB.innerHTML = '<svg viewBox="0 0 ' + spB.W + ' ' + (spB.H + 18) + '" style="display:block;width:100%;height:' + (spB.H + 18) + 'px">'
-        + '<line x1="30" y1="' + topoB + '" x2="' + spB.W + '" y2="' + topoB + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-        + '<text x="2" y="' + (+topoB + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">100%</text>'
-        + '<text x="2" y="' + (meioB + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">50</text>'
-        + '<text x="2" y="' + (baseB + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
-        + '<line x1="30" y1="' + baseB + '" x2="' + spB.W + '" y2="' + baseB + '" stroke="var(--line)" stroke-width="1.3"></line>'
-        + '<path d="' + areaB + '" fill="var(--perm)" opacity="0.14"></path>'
-        + '<polyline points="' + ptsB.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
-        + dotsB + ticksB + '</svg>';
-      var r10 = src[10];
-      $("h-ret-nota").textContent = r10.d > 0
-        ? "escopo: idade 10 anos = " + (100 * r10.n / r10.d).toFixed(1).replace(".", ",") + "% ainda soja (passe o mouse nos pontos)"
-        : "média sobre as coortes do escopo";
-    }
-    /* C — coortes por década */
-    var boxC = $("h-coortes");
-    var COORTES = [1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020];
-    var spC = svgPx(boxC, 210);
-    var maxKC = Math.max.apply(null, COORTES.map(function (o2) { return ANOS[ANOS.length - 1] - o2; }));
-    var passoC = (spC.W - 30) / maxKC;
-    var coo = "", leg = "", ticksC = "";
-    COORTES.forEach(function (kT) {
-      if (kT % 5 === 0 && kT <= maxKC) {
-        ticksC += '<text x="' + (10 + kT * passoC).toFixed(1) + '" y="' + (spC.H + 12) + '" font-size="10" font-weight="700" fill="var(--muted)" text-anchor="middle">' + kT + '</text>';
-      }
-    });
-    COORTES.forEach(function (o2, ci) {
-      var cor = PALETA[ci % PALETA.length];
-      var serieCo = [];
-      for (var k2 = 1; k2 <= ANOS[ANOS.length - 1] - o2; k2++) {
-        var wC = janelaCo(use, o2, o2 + k2);
-        if (wC.d <= 0) continue;
-        serieCo.push({ rel: wC.p / (wC.p + wC.d), k: k2 });
-      }
-      if (serieCo.length < 2) return;
-      var ptsC = serieCo.map(function (x) { return (10 + x.k * passoC).toFixed(1) + "," + (spC.H - 20 - (spC.H - 44) * x.rel).toFixed(1); });
-      coo += '<polyline points="' + ptsC.join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="2" stroke-linejoin="round" opacity="0.92"></polyline>';
-      var fim = ptsC[ptsC.length - 1].split(",");
-      var fimX = +fim[0];
-      var anchor = fimX > spC.W - 44 ? "end" : "start";
-      var lx = anchor === "end" ? fimX - 5 : fimX + 5;
-      coo += '<circle cx="' + fim[0] + '" cy="' + fim[1] + '" r="3" fill="' + cor + '"></circle>'
-        + '<text x="' + lx + '" y="' + (+fim[1] + 3.5) + '" font-size="10.5" font-weight="800" fill="' + cor + '" text-anchor="' + anchor + '">' + o2 + '</text>';
-      leg += '<span class="key" style="font-size:0.72rem;margin-right:12px"><span class="sw" style="background:' + cor + '"></span> coorte ' + o2 + '</span>';
-    });
-    var topoC = (spC.H - 20 - (spC.H - 44)).toFixed(1);
-    var meioC = (2 * (spC.H - 20)) - (+topoC);
-    boxC.innerHTML = '<svg viewBox="0 0 ' + spC.W + ' ' + (spC.H + 16) + '" style="display:block;width:100%;height:' + (spC.H + 16) + 'px">'
-      + '<line x1="34" y1="' + topoC + '" x2="' + spC.W + '" y2="' + topoC + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<text x="2" y="' + (+topoC + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">100%</text>'
-      + '<text x="2" y="' + (meioC + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">50</text>'
-      + '<text x="6" y="' + ((spC.H - 20) + 2) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
-      + '<line x1="34" y1="' + (spC.H - 20) + '" x2="' + spC.W + '" y2="' + (spC.H - 20) + '" stroke="var(--line)" stroke-width="1.3"></line>'
-      + coo + ticksC + '</svg>';
-    $("h-coo-leg").innerHTML = leg || '<span class="hint">Sem coortes com série suficiente.</span>';
-  }
-  function janelaCo(use, o2, d2) {
-    if (use === null) return agrega(o2, d2);
-    var rec = ufPair(use, o2, d2);
-    return { p: rec.p || 0, d: rec.d || 0, v: rec.v || 0 };
-  }
-
   /* ---- achados da janela ---- */
   function gruposDe(rec) {
     var dv = rec.dv || [];
@@ -1392,7 +1198,6 @@
     }
   }
 
-  var PLAYING = false;
   function renderAll() {
     try { location.hash = selO.value + "-" + selD.value + (+selUF.value < 0 ? "" : "-" + CODE2SIGLA[UFS[+selUF.value][0]]); } catch (e) {}
     renderVisible();
@@ -1404,10 +1209,9 @@
     renderComp(r.d, r.dd, "comp-bar-d", "comp-legend-d");
     renderMapa();
     renderGrupos();
-    if (!PLAYING) renderMatriz();
+    renderMatriz();
     renderFicha();
     renderEvo();
-    renderHistoria();
     renderAchados();
   }
 
@@ -1415,35 +1219,10 @@
   selD.addEventListener("change", renderAll);
   selUF.addEventListener("change", renderAll);
 
-  var rzT = null;
-  (function () {
-    var btn = $("btn-play"), timer = null;
-    function parar(rebuild) {
-      if (timer) { clearInterval(timer); timer = null; }
-      btn.textContent = "▶ Varrer destino";
-      btn.classList.remove("on");
-      if (rebuild && PLAYING) { PLAYING = false; renderAll(); }
-    }
-    btn.addEventListener("click", function () {
-      if (timer) { parar(true); return; }
-      var o2 = +selO.value;
-      selD.value = String(o2 + 1);
-      PLAYING = true;
-      btn.textContent = "⏸ Parar";
-      btn.classList.add("on");
-      renderAll();
-      timer = setInterval(function () {
-        var atual = +selD.value;
-        if (atual >= ANOS[ANOS.length - 1]) { parar(true); return; }
-        selD.value = String(atual + 1);
-        renderAll();
-      }, 520);
-    });
-  })();
   try {
     window.addEventListener("resize", function () {
       clearTimeout(rzT);
-      rzT = setTimeout(function () { renderEvo(); renderHistoria(); }, 180);
+      rzT = setTimeout(function () { renderEvo(); }, 180);
     });
   } catch (e) {}
 
