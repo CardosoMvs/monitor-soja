@@ -1050,27 +1050,29 @@
       axis += '<span>' + ((x.ano === o + 1 || x.ano === ultimo || x.ano % 5 === 0) ? x.ano : "") + '</span>';
     });
     $("evo-axis").innerHTML = axis;
-    var Wl = s.serie.length * 34, Hl = 150;
+    var boxL = $("evo-line-p");
+    var Wl = Math.min(1280, Math.max(340, boxL.clientWidth || 340)), Hl = 150;
+    var passo = Wl / s.serie.length;
     var pts = [], dots = "";
     s.serie.forEach(function (x, k) {
-      var px = k * 34 + 30;
-      var py = Hl - 16 - 112 * (maxP > 0 ? x.p / maxP : 0);
-      pts.push(px + "," + py.toFixed(1));
-      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="3.2" fill="var(--perm)" stroke="#fff" stroke-width="1.2"><title>' + x.ano + ' · permaneceu ' + resumo(x.p) + '</title></circle>';
+      var px = k * passo + passo / 2;
+      var py = Hl - 18 - 112 * (maxP > 0 ? x.p / maxP : 0);
+      pts.push(px.toFixed(1) + "," + py.toFixed(1));
+      dots += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="3.4" fill="var(--perm)" stroke="#fff" stroke-width="1.2"><title>' + x.ano + ' · permaneceu ' + resumo(x.p) + '</title></circle>';
     });
-    var base = Hl - 16;
+    var base = Hl - 18;
     function gy(rel) { return (base - 112 * rel).toFixed(1); }
     var areaPath = pts.length > 1
-      ? "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (Wl - 30) + "," + base + " L30," + base + " Z"
+      ? "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (Wl - passo / 2).toFixed(1) + "," + base + " L" + (passo / 2).toFixed(1) + "," + base + " Z"
       : "";
     $("evo-perm-max").textContent = resumo(maxP);
-    $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" style="width:100%;height:auto;display:block">'
-      + '<line x1="30" y1="' + gy(1) + '" x2="' + (Wl - 8) + '" y2="' + gy(1) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="30" y1="' + gy(0.5) + '" x2="' + (Wl - 8) + '" y2="' + gy(0.5) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="30" y1="' + base + '" x2="' + (Wl - 8) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1.4"></line>'
-      + '<text x="2" y="' + (+gy(1) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">' + resumo(maxP) + '</text>'
-      + '<text x="4" y="' + (+gy(0.5) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">' + resumo(maxP / 2) + '</text>'
-      + '<text x="8" y="' + (base + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
+    boxL.innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" style="display:block;width:100%;height:' + Hl + 'px">'
+      + '<line x1="34" y1="' + gy(1) + '" x2="' + Wl + '" y2="' + gy(1) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+      + '<line x1="34" y1="' + gy(0.5) + '" x2="' + Wl + '" y2="' + gy(0.5) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+      + '<line x1="34" y1="' + base + '" x2="' + Wl + '" y2="' + base + '" stroke="var(--line)" stroke-width="1.4"></line>'
+      + '<text x="2" y="' + (+gy(1) + 3.5) + '" font-size="11" font-weight="700" fill="var(--muted)">' + resumo(maxP) + '</text>'
+      + '<text x="2" y="' + (+gy(0.5) + 3.5) + '" font-size="11" font-weight="700" fill="var(--muted)">' + resumo(maxP / 2) + '</text>'
+      + '<text x="2" y="' + (base + 3.5) + '" font-size="11" font-weight="700" fill="var(--muted)">0</text>'
       + (areaPath ? '<path d="' + areaPath + '" fill="var(--perm)" opacity="0.18"></path>' : "")
       + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
       + dots + '</svg>';
@@ -1165,6 +1167,14 @@
   selO.addEventListener("change", function () { opcoesDestino(); renderAll(); });
   selD.addEventListener("change", renderAll);
   selUF.addEventListener("change", renderAll);
+
+  var rzT = null;
+  try {
+    window.addEventListener("resize", function () {
+      clearTimeout(rzT);
+      rzT = setTimeout(function () { renderEvo(); }, 180);
+    });
+  } catch (e) {}
 
   $("cob-zero").textContent = SEM_DADOS.join(" · ") || "—";
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";
