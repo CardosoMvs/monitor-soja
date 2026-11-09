@@ -536,6 +536,24 @@ a { color: var(--forest); }
 .estado-card .bmap svg { opacity: 0.9; }
 @media (max-width: 760px) { .estado-card { grid-template-columns: 1fr; } }
 
+/* --- downloads --- */
+.dl-grid { display: grid; gap: 14px; margin-top: 22px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.dl-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); padding: 18px 20px 16px; text-decoration: none;
+  display: flex; flex-direction: column; gap: 10px; overflow-wrap: anywhere; min-width: 0;
+  transition: transform 0.18s cubic-bezier(.22, .61, .36, 1), box-shadow 0.18s;
+}
+.dl-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--forest); }
+.dl-card strong { color: var(--ink); font-size: 0.95rem; }
+.dl-desc { font-size: 0.84rem; color: var(--text); line-height: 1.55; }
+.dl-desc b { color: var(--forest); }
+.dl-cta {
+  margin-top: auto; align-self: flex-start;
+  background: var(--forest); color: var(--accent-highlight);
+  font-size: 0.78rem; font-weight: 800; border-radius: 999px; padding: 7px 15px;
+}
+
 /* --- metodologia / footer --- */
 .met-card { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; margin-top: 26px; }
 .met-card summary {
@@ -554,11 +572,6 @@ a { color: var(--forest); }
 .site-footer .band-inner { padding-block: 34px 38px; text-align: center; }
 .site-footer .strong { color: var(--ink); font-weight: 700; font-size: 0.92rem; }
 .site-footer .soft { color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
-.footer-brand { display: inline-grid; grid-template-columns: 34px 34px 34px; gap: 8px; margin-bottom: 14px; }
-.footer-brand span { height: 34px; border-radius: 4px; display: grid; place-items: center; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.02em; }
-.fb-1 { background: var(--forest); color: var(--accent-highlight); }
-.fb-2 { background: var(--surface-soft); color: var(--forest); border: 1px solid var(--line); }
-.fb-3 { background: var(--accent-highlight); color: var(--forest-dark); }
 </style>
 </head>
 <body>
@@ -566,7 +579,7 @@ a { color: var(--forest); }
 
 <nav class="site-nav" aria-label="Navegação principal">
   <div class="band-inner wrap">
-    <a class="brand" href="#topo"><span class="brand-mark">39</span> Transições da Soja no Brasil</a>
+    <a class="brand" href="#topo"><span class="brand-mark">Transições da Soja no Brasil</span></a>
     <div class="nav-links">
       <a href="#visao-geral">Visão geral</a>
       <a href="#ranking" id="nl-ranking">Ranking</a>
@@ -574,6 +587,7 @@ a { color: var(--forest); }
       <a href="#matriz">Matriz</a>
       <a href="#evolucao">Evolução</a>
       <a class="keep" href="#estados">Por estado</a>
+      <a href="#dados">Baixar</a>
       <a class="keep" href="#metodologia">Metodologia</a>
     </div>
   </div>
@@ -581,8 +595,8 @@ a { color: var(--forest); }
 
 <header class="hero">
   <div class="band-inner wrap">
-    <div class="hero-eyebrow">MapBiomas · classe Soja (39) · Google Earth Engine</div>
-    <h1>De onde vem, para onde vai<br><span>a soja brasileira em 40 anos de trajetórias (1985 → 2025)</span></h1>
+    <div class="hero-eyebrow">MapBiomas · classe Soja (39)</div>
+    <h1>De onde vem, para onde vai<br><span>a soja brasileira em 41 anos de trajetórias (1985 → 2025)</span></h1>
     <p class="hero-desc">Escolha os <strong style="color:#fff">anos de início e fim</strong> e o <strong style="color:#fff">escopo</strong> no console — a página inteira reage. São <strong style="color:#fff">820 janelas possíveis por estado</strong>, todas aqui: balanço, ranking, mapas, matriz completa, evolução da soja e comparação entre estados.</p>
     <div class="hero-chips">
       <span class="hchip"><span class="sw sw-deixou"></span> Deixou de ser soja</span>
@@ -633,7 +647,8 @@ a { color: var(--forest); }
     <a class="dir-item" href="#matriz"><span class="n">04</span><span class="t">Matriz origem × destino</span><span class="a">→</span></a>
     <a class="dir-item" href="#evolucao"><span class="n">05</span><span class="t">Evolução no tempo</span><span class="a">→</span></a>
     <a class="dir-item" href="#estados"><span class="n">06</span><span class="t">Um estado ou comparar</span><span class="a">→</span></a>
-    <a class="dir-item" href="#metodologia"><span class="n">07</span><span class="t">Metodologia e cobertura</span><span class="a">→</span></a>
+    <a class="dir-item" href="#dados"><span class="n">07</span><span class="t">Baixar os dados</span><span class="a">→</span></a>
+    <a class="dir-item" href="#metodologia"><span class="n">08</span><span class="t">Metodologia e cobertura</span><span class="a">→</span></a>
   </div>
 </div>
 
@@ -641,7 +656,7 @@ a { color: var(--forest); }
   <div class="wrap band-inner">
     <div class="section-eyebrow" id="vg-eyebrow">Panorama nacional</div>
     <h2 class="section-title" id="vg-title">O balanço da janela, em números</h2>
-    <p class="section-desc" id="vg-desc">Totais do Brasil para a trajetória selecionada no console, agregados sobre as 27 unidades federativas. Valores em hectares, medidos sobre malhas de 10 m.</p>
+    <p class="section-desc" id="vg-desc">Totais do Brasil para a trajetória selecionada no console, agregados sobre as 27 unidades federativas. Valores em hectares, medidos sobre malhas de 30 m.</p>
 
     <div class="stats">
       <div class="stat"><div class="v num" id="st-soja-dd">—</div><div class="l">Soja no ano final (ha)</div></div>
@@ -821,7 +836,7 @@ a { color: var(--forest); }
         <div class="evo-legend">
           <span class="key"><span class="sw" style="background:var(--forest)"></span> Virou</span>
           <span class="key"><span class="sw" style="background:var(--atencao)"></span> Deixou</span>
-          <span class="key"><span class="sw" style="background:var(--forest)"></span> Retenção</span>
+          <span class="key"><span class="sw" style="background:var(--perm)"></span> Permaneceu (linha)</span>
         </div>
       </div>
       <div class="evo-plot" id="evo-single">
@@ -829,7 +844,7 @@ a { color: var(--forest); }
         <div class="evo-cols" id="evo-cols"></div>
         <div class="evo-axis" id="evo-axis"></div>
         <div class="evo-readout num" id="evo-readout"></div>
-        <p class="hint evo-perm-hint" id="evo-perm-hint">Retenção: de toda a soja que existia em <strong id="ret-origem-lbl">a</strong>, a % que <strong>continuava soja</strong> em cada ano de fim (linha cinza; escala fixa 0–100% — passar o mouse nos pontos dá o valor).</p>
+        <p class="hint evo-perm-hint" id="evo-perm-hint">Permaneceu (ha): a soja que existia em <strong id="ret-origem-lbl">a</strong> e <strong>continuava soja</strong> em cada ano de fim — eixo de 0 a <strong id="evo-perm-max">—</strong>; a linha segue os valores como são (sobe quando aumentam; um pixel que saiu e voltou volta a contar).</p>
         <div class="evo-line-wrap" id="evo-line-p"></div>
       </div>
       <div class="evo-multi" id="evo-multi" hidden></div>
@@ -855,6 +870,31 @@ a { color: var(--forest); }
     <div class="state-panel" id="state-panel"></div>
     <div class="cmp-grid" id="cmp-grid" hidden></div>
     <div class="cmp-empty" id="cmp-empty" hidden>Selecione de 1 a 5 estados na lista acima.</div>
+  </div>
+</section>
+
+<section class="section" id="dados" aria-label="Downloads">
+  <div class="wrap band-inner">
+    <div class="section-eyebrow">Base aberta</div>
+    <h2 class="section-title">Baixar os dados</h2>
+    <p class="section-desc">Os mesmos números desta página, em formatos diretos — use em R, Python, planilhas ou onde quiser. Sem cadastro, sem trunco.</p>
+    <div class="dl-grid">
+      <a class="dl-card" href="transicoes_long.csv.gz" download>
+        <strong class="num">transicoes_long.csv.gz</strong>
+        <span class="dl-desc">Base consolidada em formato <em>long</em>: UF × ano de início × ano de fim × transição × classe, <b>372.695 linhas</b> (2,6 MB). A porta de entrada para qualquer análise.</span>
+        <span class="dl-cta">Baixar ↓</span>
+      </a>
+      <a class="dl-card" href="todas-transicoes.zip" download>
+        <strong class="num">todas-transicoes.zip</strong>
+        <span class="dl-desc">Os 1.080 CSVs de origem: por UF e ano de início, com todas as trajetórias até 2025 (5,7 MB) — o dado como foi processado, linha a linha.</span>
+        <span class="dl-cta">Baixar ↓</span>
+      </a>
+      <a class="dl-card" href="dados.json" download>
+        <strong class="num">dados.json</strong>
+        <span class="dl-desc">O JSON compacto agregado que o próprio site carrega (~4,2 MB) — ideal para protótipos em JavaScript ou checagens rápidas.</span>
+        <span class="dl-cta">Baixar ↓</span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -1628,7 +1668,7 @@ a { color: var(--forest); }
         return c + " " + (i * 100 / n).toFixed(1) + "% " + ((i + 1) * 100 / n).toFixed(1) + "%";
       }).join(",") + ")";
     }
-    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:6px;line-height:normal;font-size:0.72rem;font-weight:800;color:var(--forest);background:#e6efdf;border-radius:4px;padding:6px 8px 4px 4px;margin-bottom:2px">origem ↓<br><span style="color:var(--muted);font-weight:700">destino →</span></div>' + linhas;
+    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:6px;line-height:normal;font-size:1rem;font-weight:800;color:var(--forest);background:#e6efdf;border-radius:4px;padding:6px 8px 4px 4px;margin-bottom:2px">origem ↓<br><span style="color:var(--muted);font-weight:700">destino →</span></div>' + linhas;
     if (max <= 0) {
       $("matriz-grad").style.background = "#edf1eb";
       $("matriz-min").textContent = "0"; $("matriz-max").textContent = "sem dados";
@@ -1943,7 +1983,7 @@ a { color: var(--forest); }
     var maxD = s.serie.reduce(function (a, x) { return Math.max(a, x.d); }, 0) || 1;
     var maxP = s.serie.reduce(function (a, x) { return Math.max(a, x.p); }, 0) || 1;
     $("evo-scale").textContent = "Escalas — virou até " + resumo(maxV) + " · deixou até " + resumo(maxD)
-      + " (cada cor na própria escala); retenção em % fixas (0–100).";
+      + " · permaneceu (linha) até " + resumo(maxP) + " — cada cor na própria escala.";
     S1 = s.serie;
     IDXD = idxMaxV(s.serie);
     $("evo-readout").innerHTML = roHtml(S1[IDXD]);
@@ -1956,27 +1996,27 @@ a { color: var(--forest); }
     var Wl = s.serie.length * 34, Hl = 150;
     var pts = [], dots = "";
     s.serie.forEach(function (x, k) {
-      var px = k * 34 + 17;
-      var den = x.p + x.d;
-      if (den <= 0) return;
-      var rel = x.p / den;
-      var py = Hl - 16 - 112 * rel;
+      var px = k * 34 + 30;
+      var py = Hl - 16 - 112 * (maxP > 0 ? x.p / maxP : 0);
       pts.push(px + "," + py.toFixed(1));
-      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="3.2" fill="var(--forest)" stroke="#fff" stroke-width="1.2"><title>' + x.ano + ' · ' + (100 * rel).toFixed(1).replace(".", ",") + '% da soja de ' + o + ' continuava soja</title></circle>';
+      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="3.2" fill="var(--perm)" stroke="#fff" stroke-width="1.2"><title>' + x.ano + ' · permaneceu ' + resumo(x.p) + '</title></circle>';
     });
-    function gy(rel) { return (Hl - 16 - 112 * rel).toFixed(1); }
-    $("ret-origem-lbl").textContent = o;
+    var base = Hl - 16;
+    function gy(rel) { return (base - 112 * rel).toFixed(1); }
+    var areaPath = pts.length > 1
+      ? "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (Wl - 30) + "," + base + " L30," + base + " Z"
+      : "";
+    $("evo-perm-max").textContent = resumo(maxP);
     $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" style="width:100%;height:auto;display:block">'
       + '<line x1="30" y1="' + gy(1) + '" x2="' + (Wl - 8) + '" y2="' + gy(1) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
       + '<line x1="30" y1="' + gy(0.5) + '" x2="' + (Wl - 8) + '" y2="' + gy(0.5) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="30" y1="' + gy(0) + '" x2="' + (Wl - 8) + '" y2="' + gy(0) + '" stroke="var(--line)" stroke-width="1.4"></line>'
-      + '<text x="2" y="' + (+gy(1) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">100%</text>'
-      + '<text x="8" y="' + (+gy(0.5) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">50</text>'
-      + '<text x="12" y="' + (+gy(0) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
-      + (pts.length > 1
-        ? ('<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--forest)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>' + dots)
-        : dots)
-      + '</svg>';
+      + '<line x1="30" y1="' + base + '" x2="' + (Wl - 8) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1.4"></line>'
+      + '<text x="2" y="' + (+gy(1) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">' + resumo(maxP) + '</text>'
+      + '<text x="4" y="' + (+gy(0.5) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">' + resumo(maxP / 2) + '</text>'
+      + '<text x="8" y="' + (base + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
+      + (areaPath ? '<path d="' + areaPath + '" fill="var(--perm)" opacity="0.18"></path>' : "")
+      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
+      + dots + '</svg>';
   }
 
   /* ---- ligações ---- */

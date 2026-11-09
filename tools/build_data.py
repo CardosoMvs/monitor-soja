@@ -189,6 +189,21 @@ with gzip.open(out_csv, "wt", encoding="utf-8", newline="") as f:
 csv_mb = os.path.getsize(out_csv) / 1e6
 print("transicoes_long.csv.gz : %d linhas, %.2f MB (gzip)" % (n_csv, csv_mb))
 
+# --------- dados.json (payload do site, formato puro) ---------
+out_json = os.path.join(BASE, "dados.json")
+with open(out_json, "w", encoding="utf-8") as f:
+    json.dump(dados, f, ensure_ascii=False, separators=(",", ":"))
+print("dados.json            : %.2f MB" % (os.path.getsize(out_json) / 1e6))
+
+# --------- todas-transicoes.zip (CSVs de origem) ---------
+import zipfile
+zip_path = os.path.join(BASE, "todas-transicoes.zip")
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
+    for name in sorted(os.listdir(SRC)):
+        if name.endswith(".csv") and name.startswith(PREFIXO):
+            z.write(os.path.join(SRC, name), arcname=name)
+print("todas-transicoes.zip  : %.2f MB" % (os.path.getsize(zip_path) / 1e6))
+
 print("arquivos lidos        : %d (vazios: %d)" % (arquivos, len(arquivos_vazios)))
 print("linhas lidas          : %d" % rows_lidas)
 print("grupos (uf/o/d/tipo)  : %d | entradas (classe/area): %d" % (n_grupos, n_entradas))

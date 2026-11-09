@@ -725,7 +725,7 @@
         return c + " " + (i * 100 / n).toFixed(1) + "% " + ((i + 1) * 100 / n).toFixed(1) + "%";
       }).join(",") + ")";
     }
-    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:6px;line-height:normal;font-size:0.72rem;font-weight:800;color:var(--forest);background:#e6efdf;border-radius:4px;padding:6px 8px 4px 4px;margin-bottom:2px">origem ↓<br><span style="color:var(--muted);font-weight:700">destino →</span></div>' + linhas;
+    $("matriz-grid").innerHTML = '<div class="mx-lbl" style="text-align:left;padding-right:6px;line-height:normal;font-size:1rem;font-weight:800;color:var(--forest);background:#e6efdf;border-radius:4px;padding:6px 8px 4px 4px;margin-bottom:2px">origem ↓<br><span style="color:var(--muted);font-weight:700">destino →</span></div>' + linhas;
     if (max <= 0) {
       $("matriz-grad").style.background = "#edf1eb";
       $("matriz-min").textContent = "0"; $("matriz-max").textContent = "sem dados";
@@ -1040,7 +1040,7 @@
     var maxD = s.serie.reduce(function (a, x) { return Math.max(a, x.d); }, 0) || 1;
     var maxP = s.serie.reduce(function (a, x) { return Math.max(a, x.p); }, 0) || 1;
     $("evo-scale").textContent = "Escalas — virou até " + resumo(maxV) + " · deixou até " + resumo(maxD)
-      + " (cada cor na própria escala); retenção em % fixas (0–100).";
+      + " · permaneceu (linha) até " + resumo(maxP) + " — cada cor na própria escala.";
     S1 = s.serie;
     IDXD = idxMaxV(s.serie);
     $("evo-readout").innerHTML = roHtml(S1[IDXD]);
@@ -1053,27 +1053,27 @@
     var Wl = s.serie.length * 34, Hl = 150;
     var pts = [], dots = "";
     s.serie.forEach(function (x, k) {
-      var px = k * 34 + 17;
-      var den = x.p + x.d;
-      if (den <= 0) return;
-      var rel = x.p / den;
-      var py = Hl - 16 - 112 * rel;
+      var px = k * 34 + 30;
+      var py = Hl - 16 - 112 * (maxP > 0 ? x.p / maxP : 0);
       pts.push(px + "," + py.toFixed(1));
-      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="3.2" fill="var(--forest)" stroke="#fff" stroke-width="1.2"><title>' + x.ano + ' · ' + (100 * rel).toFixed(1).replace(".", ",") + '% da soja de ' + o + ' continuava soja</title></circle>';
+      dots += '<circle cx="' + px + '" cy="' + py.toFixed(1) + '" r="3.2" fill="var(--perm)" stroke="#fff" stroke-width="1.2"><title>' + x.ano + ' · permaneceu ' + resumo(x.p) + '</title></circle>';
     });
-    function gy(rel) { return (Hl - 16 - 112 * rel).toFixed(1); }
-    $("ret-origem-lbl").textContent = o;
+    var base = Hl - 16;
+    function gy(rel) { return (base - 112 * rel).toFixed(1); }
+    var areaPath = pts.length > 1
+      ? "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (Wl - 30) + "," + base + " L30," + base + " Z"
+      : "";
+    $("evo-perm-max").textContent = resumo(maxP);
     $("evo-line-p").innerHTML = '<svg viewBox="0 0 ' + Wl + ' ' + Hl + '" style="width:100%;height:auto;display:block">'
       + '<line x1="30" y1="' + gy(1) + '" x2="' + (Wl - 8) + '" y2="' + gy(1) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
       + '<line x1="30" y1="' + gy(0.5) + '" x2="' + (Wl - 8) + '" y2="' + gy(0.5) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
-      + '<line x1="30" y1="' + gy(0) + '" x2="' + (Wl - 8) + '" y2="' + gy(0) + '" stroke="var(--line)" stroke-width="1.4"></line>'
-      + '<text x="2" y="' + (+gy(1) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">100%</text>'
-      + '<text x="8" y="' + (+gy(0.5) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">50</text>'
-      + '<text x="12" y="' + (+gy(0) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
-      + (pts.length > 1
-        ? ('<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--forest)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>' + dots)
-        : dots)
-      + '</svg>';
+      + '<line x1="30" y1="' + base + '" x2="' + (Wl - 8) + '" y2="' + base + '" stroke="var(--line)" stroke-width="1.4"></line>'
+      + '<text x="2" y="' + (+gy(1) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">' + resumo(maxP) + '</text>'
+      + '<text x="4" y="' + (+gy(0.5) + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">' + resumo(maxP / 2) + '</text>'
+      + '<text x="8" y="' + (base + 3.5) + '" font-size="10" font-weight="700" fill="var(--muted)">0</text>'
+      + (areaPath ? '<path d="' + areaPath + '" fill="var(--perm)" opacity="0.18"></path>' : "")
+      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="var(--perm)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>'
+      + dots + '</svg>';
   }
 
   /* ---- ligações ---- */
