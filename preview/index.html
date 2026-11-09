@@ -586,6 +586,19 @@ a { color: var(--forest); }
 .site-footer { border-top: 1px solid var(--line); background: var(--surface); }
 .site-footer .band-inner { padding-block: 34px 38px; text-align: center; }
 .site-footer .strong { color: var(--ink); font-weight: 700; font-size: 0.92rem; }
+.rod-autores {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  margin-top: 10px; font-size: 0.84rem; max-width: 100%;
+}
+.rod-autor { display: inline-flex; align-items: center; gap: 8px; overflow-wrap: anywhere; max-width: 100%; min-width: 0; }
+.rod-autor strong { color: var(--ink); }
+.rod-autor a { color: var(--forest); }
+.rod-copiar {
+  border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+  font-family: var(--font); font-size: 0.68rem; font-weight: 700; border-radius: 999px;
+  padding: 3px 10px; cursor: pointer; transition: 0.15s;
+}
+.rod-copiar:hover { border-color: var(--forest); color: var(--forest); }
 .site-footer .soft { color: var(--muted); font-size: 0.8rem; margin-top: 6px; }
 </style>
 </head>
@@ -955,7 +968,18 @@ a { color: var(--forest); }
 
 <footer class="site-footer">
   <div class="band-inner wrap">
-    <p class="strong">Desenvolvido por <a href="mailto:pretto.anacaroline@gmail.com">Ana Pretto</a>, <a href="mailto:cardoso.mvs@gmail.com">Marcos Cardoso</a> e <a href="mailto:gabriella.lima@embrapa.br">Gabriella Arruda</a></p>
+    <p class="strong">Desenvolvido por</p>
+    <div class="rod-autores">
+      <span class="rod-autor"><strong>Ana Pretto</strong>
+        <a class="num" href="mailto:pretto.anacaroline@gmail.com">pretto.anacaroline@gmail.com</a>
+        <button type="button" class="rod-copiar" data-mail="pretto.anacaroline@gmail.com" aria-label="Copiar e-mail de Ana">copiar</button></span>
+      <span class="rod-autor"><strong>Marcos Cardoso</strong>
+        <a class="num" href="mailto:cardoso.mvs@gmail.com">cardoso.mvs@gmail.com</a>
+        <button type="button" class="rod-copiar" data-mail="cardoso.mvs@gmail.com" aria-label="Copiar e-mail de Marcos">copiar</button></span>
+      <span class="rod-autor"><strong>Gabriella Arruda</strong>
+        <a class="num" href="mailto:gabriella.lima@embrapa.br">gabriella.lima@embrapa.br</a>
+        <button type="button" class="rod-copiar" data-mail="gabriella.lima@embrapa.br" aria-label="Copiar e-mail de Gabriella">copiar</button></span>
+    </div>
     <p class="soft">Dados derivados da classe Soja (39) do MapBiomas · processados no Google Earth Engine · mapa: contornos de UFs (fonte aberta) · atualizado em novembro de 2026</p>
   </div>
 </footer>
@@ -2194,6 +2218,23 @@ a { color: var(--forest); }
   $("cob-zero2").textContent = SEM_DADOS.join(", ") || "—";
 
   renderAll();
+  (function () {
+    var btns = null;
+    try { btns = document.querySelectorAll(".rod-copiar"); } catch (e) {}
+    if (btns) {
+      Array.prototype.forEach.call(btns, function (b) {
+        b.addEventListener("click", function () {
+          var m = b.getAttribute("data-mail");
+          function pronto() { b.textContent = "copiado ✓"; setTimeout(function () { b.textContent = "copiar"; }, 1400); }
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m).then(pronto, pronto);
+            else pronto();
+          } catch (e) { pronto(); }
+        });
+      });
+    }
+  })();
+
   (function () {
     var aviso = $("aviso-console");
     var visto = false;
