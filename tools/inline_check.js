@@ -82,6 +82,30 @@
 
   function ufPair(i, o, dd) { return IDX[i][o + "-" + dd] || { v: 0, d: 0, p: 0, dv: null, dd: null }; }
 
+  /* retenção por idade k: num[k]=Σ permaneceu, den[k]=Σ (permaneceu+deixou) — todas as janelas com fim−início=k */
+  function novoVetor() { var a = []; for (var i = 0; i <= 40; i++) a.push({ n: 0, d: 0 }); return a; }
+  var RET_ID = DADOS.t.map(function (grupos) {
+    var v = novoVetor();
+    grupos.forEach(function (g) {
+      var rec = { p: 0, d: 0 };
+      var s = 0;
+      g[3].forEach(function (c) { s += c[1]; });
+      if (g[2] === 2) rec.p = s;
+      if (g[2] === 1) rec.d = s;
+      var k = g[1] - g[0];
+      if (k >= 1 && k <= 40) {
+        v[k].n += rec.p;
+        v[k].d += rec.p + rec.d;
+      }
+    });
+    return v;
+  });
+  var RET_BR = novoVetor();
+  RET_ID.forEach(function (v, i) {
+    if (!UFS[i] || false) return;
+    for (var k = 1; k <= 40; k++) { RET_BR[k].n += v[k].n; RET_BR[k].d += v[k].d; }
+  });
+
   function agrega(o, dd) {
     var k = o + "-" + dd;
     var r = { v: 0, d: 0, p: 0, dv: {}, dd: {}, n: 0 };
@@ -1078,6 +1102,165 @@
       + dots + '</svg>';
   }
 
+  /* ---- séries históricas ---- */
+  function svgPx(box, H) { return { W: Math.min(1240, Math.max(300, box.clientWidth || 320)), H: H }; }
+  function eixoRel(sp, rel) { var base = sp.H - 18; return (base - (sp.H - 34) * rel).toFixed(1); }
+
+  function linhaSvg(serie, sp, cor, titFn, primeiroTick, ultimoTick) {
+    var passo = sp.W / serie.length;
+    var pts = [], dots = "";
+    serie.forEach(function (x, i) {
+      var px = (i * passo + passo / 2).toFixed(1);
+      var py = (sp.H - 18 - (sp.H - 34) * x.rel).toFixed(1);
+      pts.push(px + "," + py);
+      dots += '<circle cx="' + px + '" cy="' + py + '" r="3.2" fill="' + cor + '" stroke="#fff" stroke-width="1.1"><title>' + titFn(x) + '</title></circle>';
+    });
+    var base = sp.H - 18;
+    var areaPath = pts.length > 1
+      ? "M" + pts[0] + " L" + pts.slice(1).join(" L") + " L" + (sp.W - passo / 2).toFixed(1) + "," + base + " L" + (passo / 2).toFixed(1) + "," + base + " Z"
+      : "";
+    var ticks = "";
+    if (primeiroTick != null) ticks += '<text x="' + (passo / 2).toFixed(1) + '" y="' + (sp.H - 4) + '" font-size="9.5" font-weight="700" fill="var(--muted)">' + primeiroTick + '</text>';
+    if (ultimoTick != null) ticks += '<text x="' + (sp.W - passo / 2).toFixed(1) + '" y="' + (sp.H - 4) + '" font-size="9.5" font-weight="700" fill="var(--muted)" text-anchor="end">' + ultimoTick + '</text>';
+    return '<svg viewBox="0 0 ' + sp.W + ' ' + sp.H + '" style="display:block;width:100%;height:' + sp.H + 'px">'
+      + '<line x1="26" y1="' + (base - (sp.H - 34)) + '" x2="' + sp.W + '" y2="' + (base - (sp.H - 34)) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+      + '<line x1="26" y1="' + (base - (sp.H - 34) / 2) + '" x2="' + sp.W + '" y2="' + (base - (sp.H - 34) / 2) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+      + '<line x1="26" y1="' + base + '" x2="' + sp.W + '" y2="' + base + '" stroke="var(--line)" stroke-width="1.3"></line>'
+      + (areaPath ? '<path d="' + areaPath + '" fill="' + cor + '" opacity="0.16"></path>' : "")
+      + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"></polyline>'
+      + dots + ticks + '</svg>';
+  }
+
+  function renderHistoria() {
+    var ui = +selUF.value;
+    var use = ui < 0 ? null : ui;
+    /* A — área de soja por ano */
+    var boxA = $("h-soja");
+    var serieA = [];
+    for (var y = ANOS[0] + 1; y <= ANOS[ANOS.length - 1]; y++) {
+      var r = use === null ? agrega(y - 1, y) : ufPair(use, y - 1, y);
+      var total = (r.v || 0) + (r.p || 0);
+      if (total > 0) serieA.push({ rel: null, v: total, ano: y });
+    }
+    if (!serieA.length) {
+      boxA.innerHTML = '<p class="hint" style="padding:18px 2px">Sem soja registrada para este escopo.</p>';
+      $("h-soja-nota").textContent = "";
+    } else {
+      var maxA = serieA.reduce(function (a, x) { return Math.max(a, x.v); }, 0);
+      serieA.forEach(function (x) { x.rel = x.v / maxA; });
+      var sp = svgPx(boxA, 150);
+      boxA.innerHTML = linhaSvg(serieA, sp, "var(--forest)", function (x) { return x.ano + " · soja total " + resumo(x.v); }, serieA[0].ano, serieA[serieA.length - 1].ano);
+      var g0 = serieA[0].v, gN = serieA[serieA.length - 1].v;
+      $("h-soja-nota").textContent = serieA[0].ano + ": " + resumo(g0) + " → " + serieA[serieA.length - 1].ano + ": " + resumo(gN) + (g0 > 0 ? " (" + (gN / g0 >= 1 ? "×" + (gN / g0).toFixed(1).replace(".", ",") : "−" + (100 * (1 - gN / g0)).toFixed(0) + "%)") : "") + " · escala até " + resumo(maxA);
+      $("h-soja-tit").textContent = "Área de soja por ano" + (use === null ? " — Brasil" : " — " + UFS[use][1]);
+    }
+    /* B — retenção média por idade */
+    var boxB = $("h-ret");
+    var src = use === null ? RET_BR : RET_ID[use];
+    var serieB = [];
+    for (var k = 1; k <= 40; k++) {
+      var rec = src[k];
+      if (rec.d <= 0) continue;
+      serieB.push({ k: k, rel: rec.n / rec.d, ano: null });
+    }
+    if (!serieB.length) {
+      boxB.innerHTML = '<p class="hint" style="padding:18px 2px">Sem coortes mensuráveis para este escopo.</p>';
+      $("h-ret-nota").textContent = "";
+    } else {
+      var spB = svgPx(boxB, 150);
+      boxB.innerHTML = linhaSvg(serieB, spB, "var(--perm)",
+        function (x) { return "idade " + x.k + " anos · " + (100 * x.rel).toFixed(1).replace(".", ",") + "% ainda soja"; }, "1 ano", serieB[serieB.length - 1].k + " anos");
+      var r10 = src[10];
+      $("h-ret-nota").textContent = r10.d > 0
+        ? "média no escopo: idade 10 = " + (100 * r10.n / r10.d).toFixed(1).replace(".", ",") + "%"
+        : "média sobre as coortes do escopo";
+    }
+    /* C — coortes por década */
+    var boxC = $("h-coortes");
+    var COORTES = [1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020];
+    var spC = svgPx(boxC, 170);
+    var maxKC = Math.max.apply(null, COORTES.map(function (o2) { return ANOS[ANOS.length - 1] - o2; }));
+    var passoC = spC.W / maxKC;
+    var coo = "", leg = "";
+    COORTES.forEach(function (o2, ci) {
+      var cor = PALETA[ci % PALETA.length];
+      var serieCo = [];
+      for (var k2 = 1; k2 <= ANOS[ANOS.length - 1] - o2; k2++) {
+        var recC = (use === null ? RET_BR : RET_ID[use])[k2];
+        var wC = janelaCo(use, o2, o2 + k2);
+        if (wC.d <= 0) continue;
+        serieCo.push({ rel: wC.p / (wC.p + wC.d), k: k2, ano: o2 + k2 });
+      }
+      if (serieCo.length < 2) return;
+      var ptsC = serieCo.map(function (x) {
+        var px = (x.k * passoC).toFixed(1), py = (spC.H - 18 - (spC.H - 34) * x.rel).toFixed(1);
+        return px + "," + py;
+      });
+      coo += '<polyline points="' + ptsC.join(" ") + '" fill="none" stroke="' + cor + '" stroke-width="1.8" stroke-linejoin="round" opacity="0.9"></polyline>';
+      coo += '<circle cx="' + ptsC[ptsC.length - 1].split(",")[0] + '" cy="' + ptsC[ptsC.length - 1].split(",")[1] + '" r="2.6" fill="' + cor + '"><title>coorte ' + o2 + '</title></circle>';
+      leg += '<span class="key" style="font-size:0.72rem;margin-right:12px"><span class="sw" style="background:' + cor + '"></span> ' + o2 + '</span>';
+    });
+    boxC.innerHTML = '<svg viewBox="0 0 ' + spC.W + ' ' + spC.H + '" style="display:block;width:100%;height:' + spC.H + 'px">'
+      + '<line x1="10" y1="' + (spC.H - 18 - (spC.H - 34)) + '" x2="' + spC.W + '" y2="' + (spC.H - 18 - (spC.H - 34)) + '" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 3"></line>'
+      + '<line x1="10" y1="' + (spC.H - 18) + '" x2="' + spC.W + '" y2="' + (spC.H - 18) + '" stroke="var(--line)" stroke-width="1.3"></line>'
+      + coo + '</svg>';
+    $("h-coo-leg").innerHTML = leg || '<span class="hint">Sem coortes com série suficiente.</span>';
+  }
+  function janelaCo(use, o2, d2) {
+    if (use === null) return agrega(o2, d2);
+    var rec = ufPair(use, o2, d2);
+    return { p: rec.p || 0, d: rec.d || 0, v: rec.v || 0 };
+  }
+
+  /* ---- achados da janela ---- */
+  function gruposDe(rec) {
+    var dv = rec.dv || [];
+    if (!dv.forEach) {
+      var arr = [];
+      Object.keys(dv).forEach(function (k2) { arr.push([+k2, dv[k2]]); });
+      dv = arr;
+    }
+    var tot = [0, 0, 0, 0, 0, 0];
+    dv.forEach(function (c) {
+      var g = -1;
+      for (var i = 1; i < GRUPOS.length && g < 0; i++) if (GRUPOS[i].ids && GRUPOS[i].ids[c[0]]) g = i;
+      if (g < 0) g = 5;
+      tot[g] += c[1];
+    });
+    return tot;
+  }
+  function renderAchados() {
+    var o2 = +selO.value, dd2 = +selD.value, ui = +selUF.value;
+    var r = ui < 0 ? agrega(o2, dd2) : ufPair(ui, o2, dd2);
+    $("achados-sub").textContent = (ui < 0 ? "Brasil" : UFS[ui][1]) + " · " + o2 + " → " + dd2;
+    var fatos = [];
+    if (!(r.v + r.d + r.p)) {
+      fatos.push("Nenhuma área da classe Soja nesta janela para este escopo.");
+    } else {
+      fatos.push("<strong>Soja em " + dd2 + ":</strong> " + resumo(r.v + r.p) + (ui < 0 ? " (" + r.n + " UFs com soja)" : "") + ".");
+      var tv = classesDe(r.dv || []).filter(function (c) { return c.area > 0; });
+      if (tv.length) fatos.push("<strong>Top origem da soja nova:</strong> " + CLS[tv[0].id] + " — " + pct(tv[0].area, r.v) + " das áreas que viraram.");
+      if (ui < 0) {
+        var tops = UFS.map(function (u, i2) { return { n: u[1], v: ufPair(i2, o2, dd2).v }; }).sort(function (a, b) { return b.v - a.v; });
+        if (tops[0].v > 0) fatos.push("<strong>Estado que mais avançou:</strong> " + tops[0].n + " (" + resumo(tops[0].v) + ")" + (tops[1] && tops[1].v > 0 ? "; segue " + tops[1].n + " (" + resumo(tops[1].v) + ")" : "") + ".");
+      } else {
+        var posi = 1;
+        UFS.forEach(function (u, i2) { if (ufPair(i2, o2, dd2).v > r.v) posi++; });
+        fatos.push("<strong>Posição no ranking de expansão:</strong> " + posi + "º entre os 27.");
+      }
+      var d10 = o2 + 10;
+      if (d10 <= ANOS[ANOS.length - 1]) {
+        var r10b = ui < 0 ? agrega(o2, d10) : ufPair(ui, o2, d10);
+        if (r10b.p + r10b.d > 0) fatos.push("<strong>Retenção em 10 anos:</strong> " + pct(r10b.p, r10b.p + r10b.d) + " (" + o2 + " → " + d10 + ").");
+      }
+      var gt = gruposDe(r);
+      var gi = 0;
+      for (var i3 = 1; i3 < gt.length; i3++) if (gt[i3] > gt[gi]) gi = i3;
+      if (gi > 0 && gt[gi] > 0) fatos.push("<strong>Fonte dominante:</strong> " + GRUPOS[gi].tit + " — " + resumo(gt[gi]) + ".");
+    }
+    $("achados-list").innerHTML = fatos.map(function (f) { return "<li>" + f + "</li>"; }).join("");
+  }
+
   /* ---- ligações ---- */
   /* leitura de valores da evolução: hover nas colunas atualiza o painel */
   $("evo-single").addEventListener("mousemove", function (e) {
@@ -1148,6 +1331,7 @@
     }
   }
 
+  var PLAYING = false;
   function renderAll() {
     try { location.hash = selO.value + "-" + selD.value + (+selUF.value < 0 ? "" : "-" + CODE2SIGLA[UFS[+selUF.value][0]]); } catch (e) {}
     renderVisible();
@@ -1159,9 +1343,11 @@
     renderComp(r.d, r.dd, "comp-bar-d", "comp-legend-d");
     renderMapa();
     renderGrupos();
-    renderMatriz();
+    if (!PLAYING) renderMatriz();
     renderFicha();
     renderEvo();
+    renderHistoria();
+    renderAchados();
   }
 
   selO.addEventListener("change", function () { opcoesDestino(); renderAll(); });
@@ -1169,10 +1355,34 @@
   selUF.addEventListener("change", renderAll);
 
   var rzT = null;
+  (function () {
+    var btn = $("btn-play"), timer = null;
+    function parar(rebuild) {
+      if (timer) { clearInterval(timer); timer = null; }
+      btn.textContent = "▶ Varrer destino";
+      btn.classList.remove("on");
+      if (rebuild && PLAYING) { PLAYING = false; renderAll(); }
+    }
+    btn.addEventListener("click", function () {
+      if (timer) { parar(true); return; }
+      var o2 = +selO.value;
+      selD.value = String(o2 + 1);
+      PLAYING = true;
+      btn.textContent = "⏸ Parar";
+      btn.classList.add("on");
+      renderAll();
+      timer = setInterval(function () {
+        var atual = +selD.value;
+        if (atual >= ANOS[ANOS.length - 1]) { parar(true); return; }
+        selD.value = String(atual + 1);
+        renderAll();
+      }, 520);
+    });
+  })();
   try {
     window.addEventListener("resize", function () {
       clearTimeout(rzT);
-      rzT = setTimeout(function () { renderEvo(); }, 180);
+      rzT = setTimeout(function () { renderEvo(); renderHistoria(); }, 180);
     });
   } catch (e) {}
 
